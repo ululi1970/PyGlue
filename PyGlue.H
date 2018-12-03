@@ -80,6 +80,7 @@ private:
     FUNCTION_NOT_FOUND,
     WRONG_NUMBER_OF_ARGUMENTS,
     CANNOT_PACK_TYPE,
+    CANNOT_UNPACK_TYPE,
     CANNOT_START_INTERPRETER,
     INTERPRETER_CANNOT_BE_INITIALIZED
   }; //stores labels for error and warning messages
@@ -100,10 +101,15 @@ private:
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
-  
+  int unpackInt(PyObject *a_pin);
   PyObject* runFunction(std::string Module, std::string function, std::vector<PyObject *> arg) { return static_cast<PyObject *>(nullptr); }; // Eventually, this is going to be used to run generic functions on generic modules
   void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg); // Eventually, this is going to be used to run generic functions on generic modules
   // basic packing functions for objects that are are passed by reference
+  template <class T>
+  void unpack(T & t,PyObject * a_pin)
+  {this->lintcatcher(CANNOT_UNPACK_TYPE," ");
+  }
+
   template <class T>
   PyObject *pack(T &t)
   {
@@ -153,14 +159,16 @@ public:
     runVoidFunction(Module, function, m_args);
     m_args.clear();
   };
-  template<class... Ts>
-  void PythonFunction(PyObject* return_value,std::string Module, std::string function, Ts&... ts)
+  template<class T,class... Ts>
+  void PythonFunction(T &t,std::string Module, std::string function, Ts&... ts)
   {
     this -> BuildArgsVector(ts...);
-    return_value=runFunction(Module, function, m_args);
+    PyObject* return_value=runFunction(Module, function, m_args);
     m_args.clear();
+    unpack(t, return_value);
     
   }
+
 private:
 };
 
@@ -194,6 +202,12 @@ inline PyObject* Py::pack(std::string &a_s)
   std::string s = a_s;
   return this->packString(s);
 };
+template <> 
+inline void Py::unpack(int& a_i, PyObject* a_pin)
+{
+  a_i = this->unpackInt(a_pin);
+}
+
   // In the above specializations, we make local copies to mimic the behavior of a function
   // that is called by value. Apparently c++11 does not like mixing and matching of
   // templates by reference and by value.
