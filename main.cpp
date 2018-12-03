@@ -9,7 +9,7 @@ using namespace std::chrono;
 
 int main(){
     
-    int N=128*256*384;
+    int N=10*128*256*384;
     std::valarray<double> X(N);
     std::valarray<double> Y(N);
 
@@ -50,8 +50,9 @@ int main(){
     cout << Y[100] << endl;
 
     Python.PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);
+    if(!Python.isFuncDefined("PyAnotherModule", "oops")){
     cout << "The following call will try to run a function that does not exist" << endl;
     Python.PythonFunction("PyAnotherModule", "oops", i, F, Y);
-
+    }
     return 0;
 };

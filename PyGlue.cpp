@@ -258,6 +258,18 @@ PyObject *Py::ImportAndGetModule(std::string ModuleName)
   }
 }
 
+bool Py::isFuncDefined(std::string Module, std::string function)
+{
+  
+  PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module), function.c_str());
+  if(pFunc && PyCallable_Check(pFunc))
+  {
+    Py_DECREF(pFunc);
+    return true;
+  }else{
+    return false;
+  }
+}
 void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<PyObject *> Arg)
 {
   PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module), FuncName.c_str());

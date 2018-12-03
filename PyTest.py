@@ -1,5 +1,6 @@
 
-import numpy as np 
+import numpy as np
+
 print("module imported")
 def make_from_memView(memView, shape, dtype=np.float64, order='C', own_data=True):
     arr = np.ndarray(tuple(shape[:]), dtype, memView, order=order)

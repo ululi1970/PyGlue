@@ -133,7 +133,7 @@ public:
   ~Py(); //Destructor
 
   //
-
+  bool isFuncDefined(std::string Module, std::string function);
   // the functions that actually do the work
   template <class... Ts>
   void PythonFunction(std::string Module, std::string function, Ts &... ts) 
