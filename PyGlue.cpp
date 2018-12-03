@@ -24,7 +24,6 @@
  *  https://github.com/somarhub.
  ******************************************************************************/
 
-
 //#include "FArrayBox.H"
 #include <Python.h>
 
@@ -59,11 +58,12 @@ PyObject *loadModule(std::string moduleName)
   return pView;
 }*/
 
-PyObject * makeView(std::valarray<double> & a_v)
+PyObject *makeView(std::valarray<double> &a_v)
 {
-  unsigned long long size =a_v.size();
-  char* p=reinterpret_cast<char*>(&(a_v[0]));
-  PyObject* pView=PyMemoryView_FromMemory(p,size, PyBUF_WRITE);
+  unsigned long long size = a_v.size() * sizeof(double);
+  char *p = reinterpret_cast<char *>(&(a_v[0]));
+  
+  PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
   return pView;
 }
 // returns a pointer to a Python tuple containing a real
@@ -85,19 +85,18 @@ PyObject *Py::packInt(int a_i)
 PyObject *Py::packBool(bool a_b)
 {
   PyObject *pBool = PyTuple_New(1);
-  PyTuple_SetItem(pBool,0,PyBool_FromLong(int(a_b)));
+  PyTuple_SetItem(pBool, 0, PyBool_FromLong(int(a_b)));
   return pBool;
 }
 
-PyObject* Py::packValarray(std::valarray<double>& a_v)
+PyObject *Py::packValarray(std::valarray<double> &a_v)
 {
-  PyObject* pView=makeView(a_v);
-  PyObject* pSize=PyLong_FromLong(a_v.size());
-  PyObject* pArgs = PyTuple_New(2);
-  PyTuple_SetItem(pArgs,0,pSize);
-  PyTuple_SetItem(pArgs,1,pView);
+  PyObject *pView = makeView(a_v);
+  PyObject *pSize = PyLong_FromLong(a_v.size());
+  PyObject *pArgs = PyTuple_New(2);
+  PyTuple_SetItem(pArgs, 0, pSize);
+  PyTuple_SetItem(pArgs, 1, pView);
   return pArgs;
-  
 }
 // returns a pointer to a Python Tuple which contains the address of the buffer
 // and the metadata of the input FAB. On the Python side, this information is
@@ -208,13 +207,14 @@ PyObject* Py::packValarray(std::valarray<double>& a_v)
 */
 Py::Py()
 {
-  if (Py_IsInitialized()){
+  if (Py_IsInitialized())
+  {
     this->lintcatcher(MULTIPLE_INSTANCES_DETECTED);
   }
   Py_Initialize();
   if (!Py_IsInitialized())
   {
-    this->lintcatcher(CANNOT_START_INTERPRETER); 
+    this->lintcatcher(CANNOT_START_INTERPRETER);
   }
   PyRun_SimpleString("import sys");
   PyRun_SimpleString("sys.path.append('.')");
@@ -222,7 +222,6 @@ Py::Py()
   {
     PyErr_Print();
     this->lintcatcher(INTERPRETER_CANNOT_BE_INITIALIZED);
-    
   }
 }
 
@@ -254,7 +253,6 @@ PyObject *Py::ImportAndGetModule(std::string ModuleName)
   {
     PyErr_Print();
     this->lintcatcher(MODULE_NOT_FOUND, ModuleName);
-    
 
     Py_RETURN_NONE;
   }
@@ -276,65 +274,71 @@ void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<P
     {
       PyErr_Print();
       std::string o;
-      o = Module+"."+FuncName;
+      o = Module + "." + FuncName;
       this->lintcatcher(WRONG_NUMBER_OF_ARGUMENTS, o);
     }
     Py_DECREF(pArgs);
     Py_DECREF(pFunc);
     Py_XDECREF(pValue);
-    
   }
   else
   {
     if (PyErr_Occurred())
       PyErr_Print();
     std::string o;
-    o =  Module + "." + FuncName;
+    o = Module + "." + FuncName;
     this->lintcatcher(FUNCTION_NOT_FOUND, o);
-
-   
   }
 }
 
 void Py::lintcatcher(int a_i)
-{ switch (a_i){
-  case MULTIPLE_INSTANCES_DETECTED: MayDay::Warning(" Multiple instances detected:\
-                                    Py is meant to be instantiated only once.");
-                                    MayDay::Error("Redefine it as a global variable\
-                                    or wrap it with a singleton wrapper.");
-  case CANNOT_START_INTERPRETER: MayDay::Error("There was a problem starting the Python interpreter");
-  case INTERPRETER_CANNOT_BE_INITIALIZED: MayDay::Error("There was a problem with basinc initializion of the Python interpreter"); 
+{
+  switch (a_i)
+  {
+  case MULTIPLE_INSTANCES_DETECTED:
+  {
+  std::string o;
+  o = "Multiple instances detected. Py is meant to be instantiated only once.";
+
+  MayDay::Warning(o.c_str());
+  o = "Redefine it as a global variable or wrap it with a singleton wrapper.";
+  MayDay::Error(o.c_str());
+  }
+  case CANNOT_START_INTERPRETER:
+    MayDay::Error("There was a problem starting the Python interpreter");
+  case INTERPRETER_CANNOT_BE_INITIALIZED:
+    MayDay::Error("There was a problem with basinc initializion of the Python interpreter");
 
   default:
-    std::cout<< a_i << "\n";
+    std::cout << a_i << "\n";
     MayDay::Error("Py:lintcatcher() caught an undefined error.");
-    
-
-}
+  }
 }
 void Py::lintcatcher(int a_i, std::string name)
-{switch (a_i){
-  case MODULE_NOT_FOUND: 
-    {std::string o;
+{
+  switch (a_i)
+  {
+  case MODULE_NOT_FOUND:
+  {
+    std::string o;
     o = " Cannot find module " + name + ".";
     MayDay::Error(o.c_str());
-    }
+  }
   case FUNCTION_NOT_FOUND:
-    {std::string o;
+  {
+    std::string o;
     o = " Cannot find function " + name;
     MayDay::Error(o.c_str());
-    }
+  }
   case WRONG_NUMBER_OF_ARGUMENTS:
-  {std::string o;
-  o= "The function "+name+" encountered and error: wrong number/type of arguments?";
-  MayDay::Error(o.c_str());  
+  {
+    std::string o;
+    o = "The function " + name + " encountered and error: wrong number/type of arguments?";
+    MayDay::Error(o.c_str());
   }
   case CANNOT_PACK_TYPE:
-  MayDay::Error(" Cannot pack type");
-  default: 
-  MayDay::Error("Py::lintcatcher() caught something wrong.");
-
-} 
+    MayDay::Error(" Cannot pack type");
+  default:
+    MayDay::Error("Py::lintcatcher() caught something wrong.");
+  }
 }
-
-

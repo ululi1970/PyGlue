@@ -11,15 +11,23 @@ def make_nparray_fromFAB(Args):
     view=Args[4]
     arr = make_from_memView(view,np.append(size,np.array(nComp)),order='F')
     return arr
-def Make_nparray_FromValarray(v):
+def make_nparray_FromValarray(v):
     size=v[0]
     view=v[1]
     arr=make_from_memView(view,[size,1],order='F')
     return arr
 
-def IntIntVal(i,j,v):
-    print(v)
-    V=np.ndarray(shape=(1), dtype=np.float64, buffer=v[1])
-    print(i)
-    print(j)
-    print(V)
+def ValVal(v,w):
+   
+    V = make_nparray_FromValarray(v)
+    W = make_nparray_FromValarray(w)
+    
+    V[:]=np.tanh(W)
+    
+def IntIntVal(i, j, w):
+    W = make_nparray_FromValarray(w)
+    W[4] = -12.
+    
+        
+    
+   

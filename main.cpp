@@ -1,22 +1,57 @@
 #include "PyGlue.H"
 #include<valarray>
 #include<iostream>
+#include<Python.h>
+#include <algorithm>
+#include <chrono>
+using namespace std; 
+using namespace std::chrono;
+
 int main(){
     
-    double v[]={1. ,2., 3., 4., 5};
-    std::valarray<double> V (v,5);
-    double x=1.0;
+    int N=128*256*384;
+    std::valarray<double> X(N);
+    std::valarray<double> Y(N);
 
+
+
+    auto f = []() -> double {return double(rand() % 10)/10.0;};
+    generate(begin(X), end(X), f);
+    auto start = high_resolution_clock::now();
+    Y=tanh(X);
+    auto stop = high_resolution_clock::now();
+    //cout << Y[129] << endl; 
+    // cout << X[129] << endl; // so that the optimizer does not play tricks
     
-    int i=2;
+    auto duration = duration_cast<milliseconds>(stop-start);
+    cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
+    cout << duration.count() << " milliseconds" << endl;
+    cout << "value of Y at random location" << endl;
+    cout << Y[100] << endl;
+    int i = 2;
     int j=3;
     int l=1;
-    bool t=true;
-    bool f=false;
-    std::cout << V[4]<< "\n";
-    Py Python;
+    bool T=true;
+    bool F=false;
     
-    Python.PythonFunction("PyTest","IntIntVal",i,j,V);
+    
+
+    Py Python;
+
+    Python.PythonFunction("PyTest","IntIntVal",i,j,X); // preload module for fairness
+
+    start = high_resolution_clock::now();
+    Python.PythonFunction("PyTest", "ValVal", X, Y);
+    stop = high_resolution_clock::now();
+    duration = duration_cast<milliseconds>(stop - start);
+    cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
+    cout << duration.count() << " milliseconds" << endl;
+    cout << "value of Y at random location" << endl;
+    cout << Y[100] << endl;
+
+    Python.PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);
+    cout << "The following call will try to run a function that does not exist" << endl;
+    Python.PythonFunction("PyAnotherModule", "oops", i, F, Y);
 
     return 0;
 };
