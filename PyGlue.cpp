@@ -89,6 +89,13 @@ PyObject *Py::packBool(bool a_b)
   return pBool;
 }
 
+PyObject *Py::packString(std::string s)
+{
+  PyObject* pStr=PyUnicode_FromString(s.c_str());
+  PyObject *pArgs = PyTuple_New(1);
+  PyTuple_SetItem(pArgs, 0, pStr);
+  return pArgs;
+}
 PyObject *Py::packValarray(std::valarray<double> &a_v)
 {
   PyObject *pView = makeView(a_v);

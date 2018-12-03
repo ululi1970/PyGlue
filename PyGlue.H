@@ -99,7 +99,8 @@ private:
   PyObject *packReal(double a_x);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
-
+  PyObject *packString(std::string s);
+  
   PyObject* runFunction(std::string Module, std::string function, std::vector<PyObject *> arg) { return static_cast<PyObject *>(nullptr); }; // Eventually, this is going to be used to run generic functions on generic modules
   void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg); // Eventually, this is going to be used to run generic functions on generic modules
   // basic packing functions for objects that are are passed by reference
@@ -135,6 +136,15 @@ public:
   //
   bool isFuncDefined(std::string Module, std::string function);
   // the functions that actually do the work
+  void PythonFunction(std::string Module, std::string function)
+  {
+    runVoidFunction(Module, function,m_args);
+  };
+
+  void PythonFunction(PyObject* return_value, std::string Module, std::string function)
+  {
+    return_value=runFunction(Module, function,m_args);
+  };
   template <class... Ts>
   void PythonFunction(std::string Module, std::string function, Ts &... ts) 
   {
@@ -178,7 +188,12 @@ inline PyObject *Py::pack(bool &a_b)
   bool b = a_b;
   return this->packBool(b);
 };
-
+template < > 
+inline PyObject* Py::pack(std::string &a_s)
+{
+  std::string s = a_s;
+  return this->packString(s);
+};
   // In the above specializations, we make local copies to mimic the behavior of a function
   // that is called by value. Apparently c++11 does not like mixing and matching of
   // templates by reference and by value.
