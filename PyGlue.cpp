@@ -267,6 +267,7 @@ bool Py::isFuncDefined(std::string Module, std::string function)
     Py_DECREF(pFunc);
     return true;
   }else{
+    Py_XDECREF(pFunc);
     return false;
   }
 }
