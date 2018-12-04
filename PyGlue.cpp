@@ -263,7 +263,9 @@ bool Py::isFuncDefined(std::string Module, std::string function)
     return false;
   }
 }
-void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<PyObject *> Arg)
+
+
+PyObject* Py::runFunction(std::string Module, std::string FuncName, std::vector<PyObject *> Arg)
 {
   PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module), FuncName.c_str());
   if (pFunc && PyCallable_Check(pFunc))
@@ -284,7 +286,8 @@ void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<P
     }
     Py_DECREF(pArgs);
     Py_DECREF(pFunc);
-    Py_XDECREF(pValue);
+    //Py_XDECREF(pValue);
+    return pValue;
   }
   else
   {
@@ -293,9 +296,14 @@ void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<P
     std::string o;
     o = Module + "." + FuncName;
     this->lintcatcher(FUNCTION_NOT_FOUND, o);
+    return static_cast<PyObject*>(nullptr);
   }
 }
-
+void Py::runVoidFunction(std::string Module, std::string FuncName, std::vector<PyObject *> Arg)
+{
+  PyObject* r=this->runFunction(Module, FuncName, Arg);
+  Py_XDECREF(r);
+}
 void Py::lintcatcher(int a_i)
 {
   switch (a_i)

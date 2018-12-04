@@ -15,7 +15,7 @@ int main(){
 
 
 
-    auto f = []() -> double {return double(rand() % 10)/10.0;};
+    auto f = []() -> double {return int(rand() % 10);};
     generate(begin(X), end(X), f);
     auto start = high_resolution_clock::now();
     Y=tanh(X);
@@ -48,6 +48,7 @@ int main(){
     cout << duration.count() << " milliseconds" << endl;
     cout << "value of Y at random location" << endl;
     cout << Y[100] << endl;
+    
     std::string o = "hello world";
     Python.PythonFunction("PyAnotherModule", "PrintStringInt",  o,l);
     Python.PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);

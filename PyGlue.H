@@ -110,20 +110,24 @@ template <class T> PyObject * packValarray(std::valarray<T> &a_v)
 {
   PyObject *pView = makeView<T>(a_v);
   PyObject *pSize = PyLong_FromLong(a_v.size());
-  PyObject *pArgs = PyTuple_New(2);
+  PyObject *pSizeOfT=PyLong_FromLong(sizeof(T));
+  PyObject *pArgs = PyTuple_New(3);
   PyTuple_SetItem(pArgs, 0, pSize);
-  PyTuple_SetItem(pArgs, 1, pView);
+  PyTuple_SetItem(pArgs, 1, pSizeOfT);
+  PyTuple_SetItem(pArgs, 2, pView);
   return pArgs;
 }
-  
+  // The packing and unpacking functions that do the actual work!
   PyObject *packReal(double a_x);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
   int unpackInt(PyObject *a_pin);
-  PyObject* runFunction(std::string Module, std::string function, std::vector<PyObject *> arg) { return static_cast<PyObject *>(nullptr); }; // Eventually, this is going to be used to run generic functions on generic modules
-  void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg); // Eventually, this is going to be used to run generic functions on generic modules
-  // basic packing functions for objects that are are passed by reference
+
+  
+  void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg); 
+  PyObject * runFunction(std::string Module, std::string function, std::vector<PyObject *> arg );
+  // basic packing and unpacking template sfor objects that are are passed by reference
   template <class T>
   void unpack(T & t,PyObject * a_pin)
   {this->lintcatcher(CANNOT_UNPACK_TYPE," unpack");
@@ -136,14 +140,14 @@ template <class T> PyObject * packValarray(std::valarray<T> &a_v)
     return static_cast<PyObject *>(nullptr);
   };
 
-  // bottom of iteration
+  // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
   {
     PyObject *r = pack(t);
     m_args.push_back(r);
   };
-  // iterators
+  // recursion definition
   template <class T, class... Args>
   void BuildArgsVector(T &t, Args &... args)
   {
@@ -158,18 +162,26 @@ public:
   Py();  //Constructor
   ~Py(); //Destructor
 
-  //
+  // accessor to inquire about existence of function
   bool isFuncDefined(std::string Module, std::string function);
+
   // the functions that actually do the work
+
+  // basic templates for functions that do not require arguments
   void PythonFunction(std::string Module, std::string function)
   {
     runVoidFunction(Module, function,m_args);
   };
 
-  void PythonFunction(PyObject* return_value, std::string Module, std::string function)
+  template<class T> T PythonReturnFunction( std::string Module, std::string function)
   {
-    return_value=runFunction(Module, function,m_args);
+    PyObject* return_value=runFunction(Module, function,m_args);
+    T t;
+    unpack(t, return_value);
+    return t;
   };
+
+  // templates definitions for functions that require arguments
   template <class... Ts>
   void PythonFunction(std::string Module, std::string function, Ts &... ts) 
   {

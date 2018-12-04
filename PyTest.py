@@ -14,18 +14,21 @@ def make_nparray_fromFAB(Args):
     return arr
 def make_nparray_FromValarray(v):
     size=v[0]
-    view=v[1]
-    arr=make_from_memView(view,[size,1],order='F')
+    sizeOfObject=v[1]
+    view=v[2]
+    print("hard coded size for double valarrays! This needs to be fixed")
+    arr=make_from_memView(view,[size],order='F', dtype=np.float64)
     return arr
 
 def ValVal(v,w):
-   
+    
     V = make_nparray_FromValarray(v)
     W = make_nparray_FromValarray(w)
     
     V[:]=np.tanh(W)
     
 def IntIntVal(i, j, w):
+   
     W = make_nparray_FromValarray(w)
     W[4] = -12.
     
