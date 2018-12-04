@@ -1,5 +1,6 @@
 
 import numpy as np
+valarrayTypes = {'int': np.int32,'float': np.float32,'double': np.float64}
 
 print("module imported")
 def make_from_memView(memView, shape, dtype=np.float64, order='C', own_data=True):
@@ -14,10 +15,10 @@ def make_nparray_fromFAB(Args):
     return arr
 def make_nparray_FromValarray(v):
     size=v[0]
-    sizeOfObject=v[1]
+    TypeOfObject=v[1]
     view=v[2]
-    print("hard coded size for double valarrays! This needs to be fixed")
-    arr=make_from_memView(view,[size],order='F', dtype=np.float64)
+    
+    arr=make_from_memView(view,[size],order='F', dtype=valarrayTypes[TypeOfObject])
     return arr
 
 def ValVal(v,w):

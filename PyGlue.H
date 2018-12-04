@@ -79,44 +79,53 @@ private:
     MODULE_NOT_FOUND,
     FUNCTION_NOT_FOUND,
     WRONG_NUMBER_OF_ARGUMENTS,
+    VALARRAY_TYPE_NOT_SUPPORTED,
     CANNOT_PACK_TYPE,
     CANNOT_UNPACK_TYPE,
     CANNOT_START_INTERPRETER,
     INTERPRETER_CANNOT_BE_INITIALIZED
   }; //stores labels for error and warning messages
 
-// handlers for exceptions
+  // handlers for exceptions
   void lintcatcher(int a_i);
-  void lintcatcher(int a_i, std::string toOutput); 
+  void lintcatcher(int a_i, std::string toOutput);
 
-// stores the pointers of already loaded modules
+  // stores the pointers of already loaded modules
   std::map<std::string, PyObject *> m_Module_map;
-// used to stash the pointers of the arguments to be passed to the Python function  
+  // used to stash the pointers of the arguments to be passed to the Python function
   std::vector<PyObject *> m_args;
 
-// overloaded function to create the Python pointer for their arguments
+  // overloaded function to create the Python pointer for their arguments
   //PyObject* packFAB(FArrayBox & a_q);
-  
-  
-  template <class T> PyObject *makeView(std::valarray<T> &a_v)
-{
-  unsigned long long size = a_v.size() * sizeof(T);
-  char *p = reinterpret_cast<char *>(&(a_v[0]));
-  
-  PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
-  return pView;
-};
-template <class T> PyObject * packValarray(std::valarray<T> &a_v)
-{
-  PyObject *pView = makeView<T>(a_v);
-  PyObject *pSize = PyLong_FromLong(a_v.size());
-  PyObject *pSizeOfT=PyLong_FromLong(sizeof(T));
-  PyObject *pArgs = PyTuple_New(3);
-  PyTuple_SetItem(pArgs, 0, pSize);
-  PyTuple_SetItem(pArgs, 1, pSizeOfT);
-  PyTuple_SetItem(pArgs, 2, pView);
-  return pArgs;
-}
+
+  template <class T>
+  inline std::string TypeOf(T t)
+  {
+    this->lintcatcher(VALARRAY_TYPE_NOT_SUPPORTED);
+    return "NotDefined";
+  }
+
+  template <class T>
+  PyObject *makeView(std::valarray<T> &a_v)
+  {
+    unsigned long long size = a_v.size() * sizeof(T);
+    char *p = reinterpret_cast<char *>(&(a_v[0]));
+
+    PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
+    return pView;
+  };
+  template <class T>
+  PyObject *packValarray(std::valarray<T> &a_v)
+  {
+    PyObject *pView = makeView<T>(a_v);
+    PyObject *pSize = PyLong_FromLong(a_v.size());
+    PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>(a_v[0]).c_str());
+    PyObject *pArgs = PyTuple_New(3);
+    PyTuple_SetItem(pArgs, 0, pSize);
+    PyTuple_SetItem(pArgs, 1, pTypeOfT);
+    PyTuple_SetItem(pArgs, 2, pView);
+    return pArgs;
+  }
   // The packing and unpacking functions that do the actual work!
   PyObject *packReal(double a_x);
   PyObject *packInt(int a_i);
@@ -124,22 +133,23 @@ template <class T> PyObject * packValarray(std::valarray<T> &a_v)
   PyObject *packString(std::string s);
   int unpackInt(PyObject *a_pin);
 
-  
-  void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg); 
-  PyObject * runFunction(std::string Module, std::string function, std::vector<PyObject *> arg );
+  void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
+  PyObject *runFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
   // basic packing and unpacking template sfor objects that are are passed by reference
   template <class T>
-  void unpack(T & t,PyObject * a_pin)
-  {this->lintcatcher(CANNOT_UNPACK_TYPE," unpack");
+  void unpack(T &t, PyObject *a_pin)
+  {
+    this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
   }
 
   template <class T>
   PyObject *pack(T &t)
   {
-    this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time. 
+    this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
   };
-
+  template <class T>
+  inline PyObject *pack(std::valarray<T> &a_v) { return this->packValarray<T>(a_v); };
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
@@ -154,10 +164,10 @@ template <class T> PyObject * packValarray(std::valarray<T> &a_v)
     BuildArgsVector(t);
     BuildArgsVector(args...);
   };
-  
-   //sets or returns Module, whichever is needed
-  PyObject *ImportAndGetModule(std::string ModuleName); 
- 
+
+  //sets or returns Module, whichever is needed
+  PyObject *ImportAndGetModule(std::string ModuleName);
+
 public:
   Py();  //Constructor
   ~Py(); //Destructor
@@ -170,12 +180,13 @@ public:
   // basic templates for functions that do not require arguments
   void PythonFunction(std::string Module, std::string function)
   {
-    runVoidFunction(Module, function,m_args);
+    runVoidFunction(Module, function, m_args);
   };
 
-  template<class T> T PythonReturnFunction( std::string Module, std::string function)
+  template <class T>
+  T PythonReturnFunction(std::string Module, std::string function)
   {
-    PyObject* return_value=runFunction(Module, function,m_args);
+    PyObject *return_value = runFunction(Module, function, m_args);
     T t;
     unpack(t, return_value);
     return t;
@@ -183,20 +194,20 @@ public:
 
   // templates definitions for functions that require arguments
   template <class... Ts>
-  void PythonFunction(std::string Module, std::string function, Ts &... ts) 
+  void PythonFunction(std::string Module, std::string function, Ts &... ts)
   {
     this->BuildArgsVector(ts...);
     //runVoidFunction(Module, function, m_args);
     runVoidFunction(Module, function, m_args);
     m_args.clear();
   };
-  template<class T,class... Ts>
-   T PythonReturnFunction(std::string Module, std::string function, Ts&... ts)
+  template <class T, class... Ts>
+  T PythonReturnFunction(std::string Module, std::string function, Ts &... ts)
   {
-    this -> BuildArgsVector(ts...);
-    PyObject* return_value=runFunction(Module, function, m_args);
+    this->BuildArgsVector(ts...);
+    PyObject *return_value = runFunction(Module, function, m_args);
     m_args.clear();
-  T t;
+    T t;
     unpack(t, return_value);
     return t;
   }
@@ -206,10 +217,9 @@ private:
 
 //specializations
 //template < > inline PyObject* pack(FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
-template <>
-inline PyObject *Py::pack(std::valarray<double> &a_v) { return this->packValarray<double>(a_v); };
-template <>
-inline PyObject *Py::pack(std::valarray<int> &a_v) { return this->packValarray<int>(a_v); };
+
+
+
 // basic packing functions for objects that are passed by copy
 template <>
 inline PyObject *Py::pack(double &a_x)
@@ -230,20 +240,36 @@ inline PyObject *Py::pack(bool &a_b)
   bool b = a_b;
   return this->packBool(b);
 };
-template < > 
-inline PyObject* Py::pack(std::string &a_s)
+template <>
+inline PyObject *Py::pack(std::string &a_s)
 {
   std::string s = a_s;
   return this->packString(s);
 };
-template <> 
-inline void Py::unpack(int& a_i, PyObject* a_pin)
+template <>
+inline void Py::unpack(int &a_i, PyObject *a_pin)
 {
   a_i = this->unpackInt(a_pin);
-}
+};
 
-  // In the above specializations, we make local copies to mimic the behavior of a function
-  // that is called by value. Apparently c++11 does not like mixing and matching of
-  // templates by reference and by value.
+// In the above specializations, we make local copies to mimic the behavior of a function
+// that is called by value. Apparently c++11 does not like mixing and matching of
+// templates by reference and by value.
 
+template <>
+inline std::string Py::TypeOf(int i)
+{
+  return "int";
+};
+
+template <>
+inline std::string Py::TypeOf(float x)
+{
+  return "float";
+};
+template <>
+inline std::string Py::TypeOf(double x)
+{
+  return "double";
+};
 #endif //!___PyGlue_H__INCLUDED___

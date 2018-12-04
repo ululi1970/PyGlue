@@ -321,7 +321,8 @@ void Py::lintcatcher(int a_i)
     MayDay::Error("There was a problem starting the Python interpreter");
   case INTERPRETER_CANNOT_BE_INITIALIZED:
     MayDay::Error("There was a problem with basinc initializion of the Python interpreter");
-
+  case VALARRAY_TYPE_NOT_SUPPORTED:
+    MayDay::Error("valarray<type> are only for type int, float or double");
   default:
     std::cout << a_i << "\n";
     MayDay::Error("Py:lintcatcher() caught an undefined error.");
