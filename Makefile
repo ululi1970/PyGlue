@@ -21,7 +21,7 @@ main.o: PyGlue.H
 PyGlue.o: PyGlue.H
 
 main:  PyGlue.H PyGlue.o main.o
-	$(GCC) $(LIBDIR) $(LIBS) PyGlue.o main.o -o main 
+	$(GCC) $(LIBDIR)  PyGlue.o main.o $(LIBS) -o main 
 clean:
 	rm -f *~
 	rm -f *.o
