@@ -96,7 +96,26 @@ private:
 
 // overloaded function to create the Python pointer for their arguments
   //PyObject* packFAB(FArrayBox & a_q);
-  PyObject *packValarray(std::valarray<double> &a_q);
+  
+  
+  template <class T> PyObject *makeView(std::valarray<T> &a_v)
+{
+  unsigned long long size = a_v.size() * sizeof(T);
+  char *p = reinterpret_cast<char *>(&(a_v[0]));
+  
+  PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
+  return pView;
+};
+template <class T> PyObject * packValarray(std::valarray<T> &a_v)
+{
+  PyObject *pView = makeView<T>(a_v);
+  PyObject *pSize = PyLong_FromLong(a_v.size());
+  PyObject *pArgs = PyTuple_New(2);
+  PyTuple_SetItem(pArgs, 0, pSize);
+  PyTuple_SetItem(pArgs, 1, pView);
+  return pArgs;
+}
+  
   PyObject *packReal(double a_x);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
@@ -107,13 +126,13 @@ private:
   // basic packing functions for objects that are are passed by reference
   template <class T>
   void unpack(T & t,PyObject * a_pin)
-  {this->lintcatcher(CANNOT_UNPACK_TYPE," ");
+  {this->lintcatcher(CANNOT_UNPACK_TYPE," unpack");
   }
 
   template <class T>
   PyObject *pack(T &t)
   {
-    this->lintcatcher(CANNOT_PACK_TYPE, " "); //TODO: catch exception at compile time. 
+    this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time. 
     return static_cast<PyObject *>(nullptr);
   };
 
@@ -160,13 +179,14 @@ public:
     m_args.clear();
   };
   template<class T,class... Ts>
-  void PythonFunction(T &t,std::string Module, std::string function, Ts&... ts)
+   T PythonReturnFunction(std::string Module, std::string function, Ts&... ts)
   {
     this -> BuildArgsVector(ts...);
     PyObject* return_value=runFunction(Module, function, m_args);
     m_args.clear();
+  T t;
     unpack(t, return_value);
-    
+    return t;
   }
 
 private:
@@ -175,7 +195,9 @@ private:
 //specializations
 //template < > inline PyObject* pack(FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
 template <>
-inline PyObject *Py::pack(std::valarray<double> &a_v) { return this->packValarray(a_v); };
+inline PyObject *Py::pack(std::valarray<double> &a_v) { return this->packValarray<double>(a_v); };
+template <>
+inline PyObject *Py::pack(std::valarray<int> &a_v) { return this->packValarray<int>(a_v); };
 // basic packing functions for objects that are passed by copy
 template <>
 inline PyObject *Py::pack(double &a_x)

@@ -58,14 +58,7 @@ PyObject *loadModule(std::string moduleName)
   return pView;
 }*/
 
-PyObject *makeView(std::valarray<double> &a_v)
-{
-  unsigned long long size = a_v.size() * sizeof(double);
-  char *p = reinterpret_cast<char *>(&(a_v[0]));
-  
-  PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
-  return pView;
-}
+
 // returns a pointer to a Python tuple containing a real
 
 PyObject *Py::packReal(double a_x)
@@ -96,15 +89,7 @@ PyObject *Py::packString(std::string s)
   PyTuple_SetItem(pArgs, 0, pStr);
   return pArgs;
 }
-PyObject *Py::packValarray(std::valarray<double> &a_v)
-{
-  PyObject *pView = makeView(a_v);
-  PyObject *pSize = PyLong_FromLong(a_v.size());
-  PyObject *pArgs = PyTuple_New(2);
-  PyTuple_SetItem(pArgs, 0, pSize);
-  PyTuple_SetItem(pArgs, 1, pView);
-  return pArgs;
-}
+
 // returns a pointer to a Python Tuple which contains the address of the buffer
 // and the metadata of the input FAB. On the Python side, this information is
 // used to reference the FAB. The numpy is an alias to the FAB.
@@ -359,6 +344,7 @@ void Py::lintcatcher(int a_i, std::string name)
   case CANNOT_PACK_TYPE:
     MayDay::Error(" Cannot pack type");
   default:
-    MayDay::Error("Py::lintcatcher() caught something wrong.");
+    MayDay::Warning("Py::lintcatcher() caught something wrong.");
+    MayDay::Error(name);
   }
 }
