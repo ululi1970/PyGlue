@@ -61,10 +61,18 @@ PyObject *loadModule(std::string moduleName)
 
 // returns a pointer to a Python tuple containing a real
 
-PyObject *Py::packReal(double a_x)
+PyObject *Py::packDouble(double a_x)
 {
   PyObject *pReal = PyTuple_New(1);
   PyTuple_SetItem(pReal, 0, PyFloat_FromDouble(double(a_x)));
+  return pReal;
+  // pReal owns the object returned by PyFloat, so no need to decref that
+}
+
+PyObject *Py::packFloat(float a_x)
+{
+  PyObject *pReal = PyTuple_New(1);
+  PyTuple_SetItem(pReal, 0, PyFloat_FromDouble(double(a_x))); 
   return pReal;
   // pReal owns the object returned by PyFloat, so no need to decref that
 }
@@ -353,6 +361,7 @@ void Py::lintcatcher(int a_i, std::string name)
   case CANNOT_PACK_TYPE:
     MayDay::Error(" Cannot pack type");
   default:
+    std::cout << a_i << "\n";
     MayDay::Warning("Py::lintcatcher() caught something wrong.");
     MayDay::Error(name);
   }

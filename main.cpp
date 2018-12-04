@@ -18,9 +18,7 @@ int main()
     std::valarray<int> XI(N);
     std::valarray<int> YI(N);
 
-    cout << "size of int " << sizeof(int) << endl;
-    cout << "size of float " << sizeof(float) << endl;
-    cout << "size of double " << sizeof(double) << endl;
+    MayDay::StopOnExit(true);
 
     {
         auto f = []() -> float { return (rand() % 10) / 10.; };
@@ -46,26 +44,27 @@ int main()
     cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
     cout << duration.count() << " milliseconds" << endl;
     cout << "value of Y at random location" << endl;
-    cout << Y[100] << endl;
+    
     int i = 2;
     int j = 3;
     int l = 1;
+    double s = 3.0;
     bool T = true;
     bool F = false;
 
     Py Python;
 
-    Python.PythonFunction("PyTest", "IntIntVal", i, j, X); // preload module for fairness
-    Python.PythonFunction("PyTest", "ValVal", XI, YI);
-    Python.PythonFunction("PyTest", "ValVal", X, Y);
+    Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
+    Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
+    Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
     start = high_resolution_clock::now();
-    Python.PythonFunction("PyTest", "ValVal", XD, YD);
+    Python.PythonFunction("PyMyModule", "ValVal", XD, YD, s);
     stop = high_resolution_clock::now();
     duration = duration_cast<milliseconds>(stop - start);
     cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
     cout << duration.count() << " milliseconds" << endl;
     cout << "value of Y at random location" << endl;
-    cout << Y[100] << endl;
+    
 
     std::string o = "hello world";
     Python.PythonFunction("PyAnotherModule", "PrintStringInt", o, l);

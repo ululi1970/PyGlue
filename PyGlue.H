@@ -33,8 +33,8 @@
 #include <vector>
 #include <map>
 #include <valarray>
-// #include "State.H"
-#define Real(double)
+
+#include "MayDay.H"
 
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
@@ -58,17 +58,6 @@
 // Attention shoppers: this class is intended to instantiate a global variable!
 // If the constructor detects that a Python interpreter is already active,
 // it will throw an exception
-
-class MayDay // For testing purposes
-{
-public:
-  static void Warning(std::string msg) { std::cout << msg << "\n"; };
-  static void Error(std::string msg)
-  {
-    std::cout << msg << "\n";
-    std::exit(0);
-  };
-};
 
 class Py
 {
@@ -127,7 +116,8 @@ private:
     return pArgs;
   }
   // The packing and unpacking functions that do the actual work!
-  PyObject *packReal(double a_x);
+  PyObject *packDouble(double a_x);
+  PyObject *packFloat(float a_x);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
@@ -218,16 +208,19 @@ private:
 //specializations
 //template < > inline PyObject* pack(FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
 
-
-
 // basic packing functions for objects that are passed by copy
 template <>
 inline PyObject *Py::pack(double &a_x)
 {
   double x = a_x;
-  return this->packReal(x);
+  return this->packDouble(x);
 }; // just to test.
-
+template <>
+inline PyObject *Py::pack(float &a_x)
+{
+  double x = a_x;
+  return this->packFloat(x);
+}; // just to test.
 template <>
 inline PyObject *Py::pack(int &a_i)
 {

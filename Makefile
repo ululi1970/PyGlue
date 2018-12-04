@@ -2,7 +2,7 @@
 
 GCC=g++ -O3 -std=c++11  
 
-PYVER=3.4
+PYVER=3.6
 
 
 
@@ -13,15 +13,17 @@ LIBS = -lpython$(PYVER)m
 .SUFFIXES: .cpp .H .o 
 default: main
 
-.cpp.o: PyGlue.H
+.cpp.o: PyGlue.H MayDay.H
 	$(GCC) $(INCDIR) -c $<
 
-main.o: PyGlue.H
+main.o: PyGlue.H MayDay.H
 
-PyGlue.o: PyGlue.H
+PyGlue.o: PyGlue.H MayDay.H
 
-main:  PyGlue.H PyGlue.o main.o
-	$(GCC) $(LIBDIR)  PyGlue.o main.o $(LIBS) -o main 
+MayDay.o: MayDay.H 
+
+main:  PyGlue.H MayDay.H PyGlue.o main.o MayDay.o
+	$(GCC) $(LIBDIR)  MayDay.o PyGlue.o main.o $(LIBS) -o main 
 clean:
 	rm -f *~
 	rm -f *.o
