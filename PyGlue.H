@@ -33,9 +33,24 @@
 #include <vector>
 #include <map>
 #include <valarray>
-
+#include <type_traits>
 #include "MayDay.H"
+#define TYPEtoSTR(X)           \
+  {if (std::is_same<T, X>::value) \
+  {                       \
+    return #X;            \
+  } }
 
+// this macro is to be used on arithmetic types
+#define IFTYPE(X, Y)                      \
+  {                                       \
+    if (std::is_same<T, X>::value)        \
+    {                                     \
+      t = static_cast<X>(this->Y(a_pin)); \
+      return;                             \
+    }                                     \
+  }
+#define SAME(X) std::is_same<T,X>::value
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
 /* {Py Python;
@@ -90,8 +105,14 @@ private:
   template <class T>
   inline std::string TypeOf(T t)
   {
+    const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double);
+    static_assert(check_type_is_defined, "Valarrays are only supported for int, float and double. Feel free to add to the list and post back.");
+    TYPEtoSTR(int)
+    TYPEtoSTR(double)
+    TYPEtoSTR(float)
+
     this->lintcatcher(VALARRAY_TYPE_NOT_SUPPORTED);
-    return "NotDefined";
+    return "";
   }
 
   template <class T>
@@ -101,6 +122,27 @@ private:
     char *p = reinterpret_cast<char *>(&(a_v[0]));
 
     PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
+    return pView;
+  };
+  template <class T>
+  PyObject *packValarray(const std::valarray<T> &a_v)
+  {
+    PyObject *pView = makeView<T>(a_v);
+    PyObject *pSize = PyLong_FromLong(a_v.size());
+    PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>(a_v[0]).c_str());
+    PyObject *pArgs = PyTuple_New(3);
+    PyTuple_SetItem(pArgs, 0, pSize);
+    PyTuple_SetItem(pArgs, 1, pTypeOfT);
+    PyTuple_SetItem(pArgs, 2, pView);
+    return pArgs;
+  }
+  template <class T>
+  PyObject *makeView(const std::valarray<T> &a_v)
+  {
+    unsigned long long size = a_v.size() * sizeof(T);
+    char *p = reinterpret_cast<char *>(const_cast<T*> (&(a_v[0])));
+
+    PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_READ);
     return pView;
   };
   template <class T>
@@ -133,21 +175,36 @@ private:
   template <class T>
   void unpack(T &t, PyObject *a_pin)
   {
+    IFTYPE(bool,unpackBool)
+    
+    IFTYPE(int, unpackInt)
+   
+    IFTYPE(double,unpackDouble)
+   
+    IFTYPE(float, unpackFloat)
     this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
+    
   }
 
   template <class T>
   PyObject *pack(T &t)
   {
+    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
     this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
+    static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
     return static_cast<PyObject *>(nullptr);
   };
+
   template <class T>
   inline PyObject *pack(std::valarray<T> &a_v) { return this->packValarray<T>(a_v); };
+  template <class T>
+  inline PyObject *pack(const std::valarray<T> &a_v) { return this->packValarray<T>(a_v); };
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
-  {
+  { if(std::is_const<T>::value){
+      MayDay::Warning ("found one!");
+    }
     PyObject *r = pack(t);
     m_args.push_back(r);
   };
@@ -203,7 +260,7 @@ public:
     PyObject *return_value = runFunction(Module, function, m_args);
     m_args.clear();
     T t;
-    unpack(t, return_value);
+    unpack<T>(t, return_value);
     Py_DECREF(return_value);
     return t;
   }
@@ -245,26 +302,38 @@ inline PyObject *Py::pack(std::string &a_s)
   std::string s = a_s;
   return this->packString(s);
 };
+
 template <>
-inline void Py::unpack(int &a_i, PyObject *a_pin)
+inline PyObject *Py::pack(const double &a_x)
 {
-  a_i = this->unpackInt(a_pin);
+  double x = a_x;
+  return this->packDouble(x);
+}; // just to test.
+template <>
+inline PyObject *Py::pack(const float &a_x)
+{
+  double x = a_x;
+  return this->packFloat(x);
+}; // just to test.
+template <>
+inline PyObject *Py::pack(const int &a_i)
+{
+  int i = a_i;
+  return this->packInt(i);
+}; // pack an int
+template <>
+inline PyObject *Py::pack(const bool &a_b)
+{
+  bool b = a_b;
+  return this->packBool(b);
 };
 template <>
-inline void Py::unpack(bool &a_i, PyObject *a_pin)
+inline PyObject *Py::pack(const std::string &a_s)
 {
-  a_i = this->unpackBool(a_pin);
+  std::string s = a_s;
+  return this->packString(s);
 };
-template <>
-inline void Py::unpack(float &a_i, PyObject *a_pin)
-{
-  a_i = this->unpackFloat(a_pin);
-};
-template <>
-inline void Py::unpack(double &a_i, PyObject *a_pin)
-{
-  a_i = this->unpackDouble(a_pin);
-};
+
 template <>
 inline void Py::unpack(std::string &a_i, PyObject *a_pin)
 {
@@ -275,20 +344,4 @@ inline void Py::unpack(std::string &a_i, PyObject *a_pin)
 // that is called by value. Apparently c++11 does not like mixing and matching of
 // templates by reference and by value.
 
-template <>
-inline std::string Py::TypeOf(int i)
-{
-  return "int";
-};
-
-template <>
-inline std::string Py::TypeOf(float x)
-{
-  return "float";
-};
-template <>
-inline std::string Py::TypeOf(double x)
-{
-  return "double";
-};
 #endif //!___PyGlue_H__INCLUDED___

@@ -23,3 +23,17 @@ def sumVA(X):
     x=pg.ValarrayToNumpy(X)
     return x.sum()
 
+def CompInt(i, j):
+    return (i[0] > j[0])
+    
+def RetString(s):
+    return s[0]
+
+def PrintStr(s):
+    print(s)
+
+def DoSomethingToV(v):
+    W = pg.ValarrayToNumpy(v)
+    W[0] = -1
+    
+    

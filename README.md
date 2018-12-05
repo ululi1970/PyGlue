@@ -30,6 +30,8 @@ Python.PythonFunction("ham","spam",X,Y,Z,M,N,A);
 
 }
 
+See also the main.cpp file for more example of usage.  
+
 # Design considerations
 
 The library is designed to minimize deep copies. To this effect, only basic types (int, float and double) are passed by value, on the assumption that nobody would want to set up the machinery to manipulate simple types. Data rich structures (e.g., valarrays) are instead aliased into numpys, without deep copies. 
@@ -50,3 +52,6 @@ In this library, we adopt two strategy. First, when we have reason to suspect th
 Due to the nature of template metaprogramming, it is not 
 advisable to continue a program after an exception has raised: you never know what the compiler has prepared for you. Just exit and fix the problem.  
 
+# Types
+
+The library handles the 5 basic data types (bool, int, float, double and std::string) and valarray<T> with T (int, double, float). Functions that allow return only do for the basic data types. The idea is that if a function needs to fill a data container, it should be passed as argument rather than doing a deep copy. Basic data types are always passed by value, so the const and noncost versions are the same. For containers, in the const case, we set PyBuf_READ when we create the pointer to the buffer. This will cause the program to stop if a function on the Python side will try to write to a container declared const. Unfortunately, I do not think there is a way to enforce it at the compile level. 

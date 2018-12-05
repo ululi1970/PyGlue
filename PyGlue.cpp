@@ -99,13 +99,15 @@ PyObject *Py::packString(std::string s)
 }
 
 std::string Py::unpackString(PyObject* a_pin)
-{ std::string o = "";
-  return o;
+{ char * o = PyUnicode_AsUTF8(a_pin);
+  std::cout << o << std::endl;
+  std::string s(o);
+  return s;
 }
 
 bool Py::unpackBool(PyObject* a_pin)
 {
-  return true;
+  return (a_pin == Py_True);
 }
 
 int Py::unpackInt(PyObject * a_pin)

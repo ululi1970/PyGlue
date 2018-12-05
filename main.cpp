@@ -7,6 +7,12 @@
 using namespace std;
 using namespace std::chrono;
 
+Py Python;
+void testconst(const valarray<double>&v )
+{
+    Python.PythonFunction("PyMyModule", "DoSomethingToV", v);
+}
+
 int main()
 {
 
@@ -46,16 +52,19 @@ int main()
     cout << duration.count() << " milliseconds" << endl;
     cout << "value of Y at random location" << endl;
     
-    int i = 2;
+    const int i = 2;
     int j = 3;
     int l = 1;
     double s = 3.0;
     bool T = true;
     bool F = false;
 
-    Py Python;
+    uint m = 0;
+    testconst(XD);
 
-    Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
+    const valarray<float> &XX = X;
+
+    Python.PythonFunction("PyMyModule", "IntIntVal", m, j, XX); // preload module for fairness
     Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
     Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
     start = high_resolution_clock::now();
@@ -78,6 +87,13 @@ int main()
     cout << xx << " = " << yy-0.5 << endl;
     xx=Python.PythonReturnFunction<double>("PyMyModule","sumVA",Y);
     cout << xx << " = " << Y.sum() << endl;
+    
+    T=Python.PythonReturnFunction<bool>("PyMyModule", "CompInt", i, j);
+    cout << "Is " <<  i  << " > " << j << "? " << T << endl;
+
+    std::string stringa = "ciao.";
+    Python.PythonFunction("PyMyModule", "PrintStr", stringa);
+    std::string sb = Python.PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
     if (!Python.isFuncDefined("PyAnotherModule", "oops"))
     {
         cout << "The following call will try to run a function that does not exist" << endl;
