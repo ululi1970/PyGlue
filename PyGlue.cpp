@@ -98,6 +98,36 @@ PyObject *Py::packString(std::string s)
   return pArgs;
 }
 
+std::string Py::unpackString(PyObject* a_pin)
+{ std::string o = "";
+  return o;
+}
+
+bool Py::unpackBool(PyObject* a_pin)
+{
+  return true;
+}
+
+int Py::unpackInt(PyObject * a_pin)
+{
+  int i =static_cast<int>(PyLong_AsLong(a_pin));
+  if(PyErr_Occurred()){PyErr_Print();}
+  return i;
+}
+
+float Py::unpackFloat(PyObject * a_pin)
+{
+  float x= static_cast<float>(PyFloat_AsDouble(a_pin));
+   if(PyErr_Occurred()){PyErr_Print();}
+  return x;
+}
+
+double Py::unpackDouble(PyObject * a_pin)
+{
+  double x= PyFloat_AsDouble(a_pin);
+   if(PyErr_Occurred()){PyErr_Print();}
+  return x;
+}
 // returns a pointer to a Python Tuple which contains the address of the buffer
 // and the metadata of the input FAB. On the Python side, this information is
 // used to reference the FAB. The numpy is an alias to the FAB.

@@ -10,7 +10,7 @@ using namespace std::chrono;
 int main()
 {
 
-    int N = 128 * 256 * 384;
+    int N = 12 * 25 * 38;
     std::valarray<float> X(N);
     std::valarray<float> Y(N);
     std::valarray<double> XD(N);
@@ -36,6 +36,7 @@ int main()
     auto start = high_resolution_clock::now();
     YD = tanh(XD);
     auto stop = high_resolution_clock::now();
+    Y=tanh(X);
     //cout << Y[129] << endl;
     // cout << X[129] << endl; // so that the optimizer does not play tricks
 
@@ -69,6 +70,14 @@ int main()
     std::string o = "hello world";
     Python.PythonFunction("PyAnotherModule", "PrintStringInt", o, l);
     Python.PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);
+
+    int ip1 = Python.PythonReturnFunction<int>("PyMyModule", "retInt", j);
+    double yy=1.0;
+    double xx = Python.PythonReturnFunction<double>("PyMyModule", "retDouble", yy);
+    cout << ip1 << " = " << j+1 << endl;
+    cout << xx << " = " << yy-0.5 << endl;
+    xx=Python.PythonReturnFunction<double>("PyMyModule","sumVA",Y);
+    cout << xx << " = " << Y.sum() << endl;
     if (!Python.isFuncDefined("PyAnotherModule", "oops"))
     {
         cout << "The following call will try to run a function that does not exist" << endl;

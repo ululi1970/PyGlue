@@ -122,6 +122,10 @@ private:
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
   int unpackInt(PyObject *a_pin);
+  float unpackFloat(PyObject* a_pin);
+  double unpackDouble(PyObject* a_pin);
+  std::string unpackString(PyObject* a_pin);
+  bool unpackBool(PyObject* a_pin);
 
   void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
   PyObject *runFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
@@ -179,6 +183,7 @@ public:
     PyObject *return_value = runFunction(Module, function, m_args);
     T t;
     unpack(t, return_value);
+    Py_DECREF(return_value);
     return t;
   };
 
@@ -199,6 +204,7 @@ public:
     m_args.clear();
     T t;
     unpack(t, return_value);
+    Py_DECREF(return_value);
     return t;
   }
 
@@ -243,6 +249,26 @@ template <>
 inline void Py::unpack(int &a_i, PyObject *a_pin)
 {
   a_i = this->unpackInt(a_pin);
+};
+template <>
+inline void Py::unpack(bool &a_i, PyObject *a_pin)
+{
+  a_i = this->unpackBool(a_pin);
+};
+template <>
+inline void Py::unpack(float &a_i, PyObject *a_pin)
+{
+  a_i = this->unpackFloat(a_pin);
+};
+template <>
+inline void Py::unpack(double &a_i, PyObject *a_pin)
+{
+  a_i = this->unpackDouble(a_pin);
+};
+template <>
+inline void Py::unpack(std::string &a_i, PyObject *a_pin)
+{
+  a_i = this->unpackString(a_pin);
 };
 
 // In the above specializations, we make local copies to mimic the behavior of a function
