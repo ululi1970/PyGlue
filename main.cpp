@@ -60,11 +60,11 @@ int main()
     bool F = false;
 
     uint m = 0;
-    testconst(XD);
+    //testconst(XD);
 
     const valarray<float> &XX = X;
 
-    Python.PythonFunction("PyMyModule", "IntIntVal", m, j, XX); // preload module for fairness
+    Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
     Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
     Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
     start = high_resolution_clock::now();

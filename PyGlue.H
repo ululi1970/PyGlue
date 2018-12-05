@@ -202,9 +202,7 @@ private:
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
-  { if(std::is_const<T>::value){
-      MayDay::Warning ("found one!");
-    }
+  { 
     PyObject *r = pack(t);
     m_args.push_back(r);
   };
