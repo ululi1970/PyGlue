@@ -24,14 +24,14 @@
  *  https://github.com/somarhub.
  ******************************************************************************/
 
-//#include "FArrayBox.H"
-#include <Python.h>
 
-//#include "State.H"
-//#include "ParmParse.H"
-#include "PyGlue.H"
+#include <Python.h>
 #include <unistd.h>
 #include <sstream>
+
+#include "PyGlue.H"
+#include "FArrayBox.H"
+
 #define addCompName(X) compNames[statePtr->X] = #X;
 
 // imports moduleName into the interpreter
@@ -48,16 +48,25 @@ PyObject *loadModule(std::string moduleName)
 
 // returns a pointer to a Python object that stores the memory address of the
 // buffer of the FAB a_in.
-// TODO: make a const version (using PyBUF_WRITE)??
-/*PyObject *makeView(FArrayBox &a_in)
+// TODO: Not a very elegant solution: there should be a single template for makeview, 
+// but then, there are only a few lines, and the template would probably take as much. 
+PyObject *makeViewFAB(FArrayBox &a_in)
 {
 
   unsigned long long size = a_in.size(a_in.box(), a_in.interval());
 
   PyObject *pView = PyMemoryView_FromMemory((char *)a_in.dataPtr(), size, PyBUF_WRITE);
   return pView;
-}*/
+}
 
+PyObject *makeViewFAB(const FArrayBox &a_in)
+{
+
+  unsigned long long size = a_in.size(a_in.box(), a_in.interval());
+
+  PyObject *pView = PyMemoryView_FromMemory((char *)a_in.dataPtr(), size, PyBUF_READ);
+  return pView;
+}
 
 // returns a pointer to a Python tuple containing a real
 
@@ -130,14 +139,13 @@ double Py::unpackDouble(PyObject * a_pin)
    if(PyErr_Occurred()){PyErr_Print();}
   return x;
 }
-// returns a pointer to a Python Tuple which contains the address of the buffer
-// and the metadata of the input FAB. On the Python side, this information is
-// used to reference the FAB. The numpy is an alias to the FAB.
 
-/*PyObject *Py::packFAB(FArrayBox &a_q)
+
+PyObject *Py::packFAB(const FArrayBox &a_in)
 {
 
-  PyObject *pView = makeView(a_q); // get the memory address
+  PyObject *pView = makeViewFAB(a_in); // get the memory address
+  
   PyObject *pArgs = PyTuple_New(5);
 
   PyObject *pLo = PyTuple_New(SpaceDim);
@@ -163,7 +171,39 @@ double Py::unpackDouble(PyObject * a_pin)
   PyTuple_SetItem(pArgs, 4, pView);
   return pArgs;
   //again here we do not decref the items stored in pArgs, since the latter owns them now.
-}*/
+};
+
+PyObject *Py::packFAB(FArrayBox &a_in)
+{
+
+  PyObject *pView = makeViewFAB(a_in); // get the memory address
+  
+  PyObject *pArgs = PyTuple_New(5);
+
+  PyObject *pLo = PyTuple_New(SpaceDim);
+  PyObject *pSize = PyTuple_New(SpaceDim);
+  PyObject *pCentering = PyTuple_New(SpaceDim);
+  PyObject *nComp = PyTuple_New(1);
+
+  IndexType ind = a_in.box().ixType();
+
+  for (auto i = 0; i < SpaceDim; ++i)
+  {
+
+    PyTuple_SetItem(pLo, i, PyLong_FromLong(a_in.box().smallEnd()[i]));
+    PyTuple_SetItem(pSize, i, PyLong_FromLong(a_in.size()[i]));
+    PyTuple_SetItem(pCentering, i, PyLong_FromLong(ind.test(i)));
+  }
+  PyTuple_SetItem(nComp, 0, PyLong_FromLong(a_in.nComp()));
+
+  PyTuple_SetItem(pArgs, 0, pLo);
+  PyTuple_SetItem(pArgs, 1, pSize);
+  PyTuple_SetItem(pArgs, 2, pCentering);
+  PyTuple_SetItem(pArgs, 3, nComp);
+  PyTuple_SetItem(pArgs, 4, pView);
+  return pArgs;
+  //again here we do not decref the items stored in pArgs, since the latter owns them now.
+};
 
 /* Initializes python, passing in component names and positions as well as parmParse parameters
  * moduleName: name of the python file minus the ".py" extension

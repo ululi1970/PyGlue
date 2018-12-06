@@ -26,8 +26,7 @@
 #ifndef ___PyGlue_H__INCLUDED___
 #define ___PyGlue_H__INCLUDED___
 
-//#define CH_assert(X) 
-//#define STATIC_ASSERT(X) {if (!X) {std::exit(-1);}}
+
 #include <Python.h>
 #include <sstream>
 #include <iostream>
@@ -107,8 +106,10 @@ private:
   std::vector<PyObject *> m_args;
 
   // overloaded function to create the Python pointer for their arguments
-  //PyObject* packFAB(FArrayBox & a_q);
+  
 
+  //used to set a str of the correspoding type, to be used to specify what type
+  // of numpy should be attached to the valarray
   template <class T>
   inline std::string TypeOf(T t)
   {
@@ -122,8 +123,10 @@ private:
     return "";
   }
 
+// The packing and unpacking functions that do the actual work!
+
   template <class T>
-  PyObject *makeView(std::valarray<T> &a_v)
+  PyObject *makeViewVA(std::valarray<T> &a_v)
   {
     unsigned long long size = a_v.size() * sizeof(T);
     char *p = reinterpret_cast<char *>(&(a_v[0]));
@@ -134,7 +137,7 @@ private:
   template <class T>
   PyObject *packValarray(const std::valarray<T> &a_v)
   {
-    PyObject *pView = makeView<T>(a_v);
+    PyObject *pView = makeViewVA<T>(a_v);
     PyObject *pSize = PyLong_FromLong(a_v.size());
     PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>(a_v[0]).c_str());
     PyObject *pArgs = PyTuple_New(3);
@@ -144,7 +147,7 @@ private:
     return pArgs;
   }
   template <class T>
-  PyObject *makeView(const std::valarray<T> &a_v)
+  PyObject *makeViewVA(const std::valarray<T> &a_v)
   {
     unsigned long long size = a_v.size() * sizeof(T);
     char *p = reinterpret_cast<char *>(const_cast<T*> (&(a_v[0])));
@@ -152,10 +155,12 @@ private:
     PyObject *pView = PyMemoryView_FromMemory(p, size, PyBUF_READ);
     return pView;
   };
+
+  
   template <class T>
   PyObject *packValarray(std::valarray<T> &a_v)
   {
-    PyObject *pView = makeView<T>(a_v);
+    PyObject *pView = makeViewVA<T>(a_v);
     PyObject *pSize = PyLong_FromLong(a_v.size());
     PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>(a_v[0]).c_str());
     PyObject *pArgs = PyTuple_New(3);
@@ -164,7 +169,9 @@ private:
     PyTuple_SetItem(pArgs, 2, pView);
     return pArgs;
   }
-  // The packing and unpacking functions that do the actual work!
+  
+  PyObject* packFAB(FArrayBox & a_q);
+  PyObject* packFAB(const FArrayBox & a_q);
   PyObject *packDouble(double a_x);
   PyObject *packFloat(float a_x);
   PyObject *packInt(int a_i);
@@ -206,6 +213,7 @@ private:
   inline PyObject *pack(std::valarray<T> &a_v) { return this->packValarray<T>(a_v); };
   template <class T>
   inline PyObject *pack(const std::valarray<T> &a_v) { return this->packValarray<T>(a_v); };
+  
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
@@ -274,8 +282,8 @@ private:
 };
 
 //specializations
-//template < > inline PyObject* pack(FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
-
+template < > inline PyObject* Py::pack(FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
+template < > inline PyObject* Py::pack(const FArrayBox & a_q){ return this->packFAB(a_q);}; // return an object that Python uses to alias a_q to a numpy
 // basic packing functions for objects that are passed by copy
 template <>
 inline PyObject *Py::pack(double &a_x)

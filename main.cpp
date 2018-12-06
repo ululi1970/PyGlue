@@ -1,11 +1,13 @@
 #include "PyGlue.H"
+#include "mpi.h"
 #include <valarray>
 #include <iostream>
 #include <Python.h>
 #include <algorithm>
-//#include <chrono>
+#include <chrono>
+
 using namespace std;
-//using namespace std::chrono;
+using namespace std::chrono;
 
 Py Python;
 void testconst(const valarray<double>&v )
@@ -13,9 +15,20 @@ void testconst(const valarray<double>&v )
     Python.PythonFunction("PyMyModule", "DoSomethingToV", v);
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+#ifdef CH_MPI
+    MPI_Init(&argc, &argv);
+#endif
 
+    std::string Str[3];
+    Str[0]="qui";
+    Str[1]="quo";
+    Str[2]="qua";
+
+    Python.PythonFunction("MyPyModule", "threestr", Str);
+    return 0;
+    
     int N = 12 * 25 * 38;
     std::valarray<float> X(N);
     std::valarray<float> Y(N);
@@ -24,8 +37,29 @@ int main()
     std::valarray<int> XI(N);
     std::valarray<int> YI(N);
 
-    //MayDay::StopOnExit(true);
+    // build a FAB of size 12*25*38
+    std::vector<int> lov;
+    lov.push_back(0);
+     lov.push_back(0);
+      lov.push_back(0);
+      Vector<int> loV(lov);
+    IntVect lo(loV);
 
+    std::vector<int> hiv;
+    hiv.push_back(11);
+     hiv.push_back(24);
+      hiv.push_back(37);
+      cout<< hiv[0] << endl;
+      Vector<int> hiV(hiv);
+    IntVect hi(hiV);
+    Box b(lo,hi);
+    FArrayBox q(b,1);
+
+    q(hi,0)=5.0;
+    q(lo,0)=10.0;
+    valarray<Real> qVA(q.dataPtr(0),N);
+
+    cout<< qVA[N-1] << endl;
     {
         auto f = []() -> float { return (rand() % 10) / 10.; };
         generate(begin(X), end(X), f);
@@ -39,18 +73,19 @@ int main()
         generate(begin(XI), end(XI), f);
     }
 
-    //auto start = high_resolution_clock::now();
+
+    auto start = high_resolution_clock::now();
     YD = tanh(XD);
-    //auto stop = high_resolution_clock::now();
+    auto stop = high_resolution_clock::now();
     Y=tanh(X);
-    //cout << Y[129] << endl;
-    // cout << X[129] << endl; // so that the optimizer does not play tricks
+    cout << Y[129] << endl;
+     cout << X[129] << endl; // so that the optimizer does not play tricks
 
-    //auto duration = duration_cast<milliseconds>(stop - start);
+    auto duration = duration_cast<milliseconds>(stop - start);
 
-    //cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
-    //cout << duration.count() << " milliseconds" << endl;
-    //cout << "value of Y at random location" << endl;
+    cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
+    cout << duration.count() << " milliseconds" << endl;
+    cout << "value of Y at random location" << endl;
     
     const int i = 2;
     int j = 3;
@@ -63,17 +98,19 @@ int main()
     //testconst(XD);
 
     const valarray<float> &XX = X;
-
+    Python.PythonFunction("PyMyModule", "IntValFAB", i,qVA,q);
+    cout << "FAB "<< q(hi,0) << endl;
+    cout << "VAL " << qVA[N-1] << endl;
     Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
     Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
     Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
-    //start = high_resolution_clock::now();
+    start = high_resolution_clock::now();
     Python.PythonFunction("PyMyModule", "ValVal", XD, YD, s);
-    //stop = high_resolution_clock::now();
-    //duration = duration_cast<milliseconds>(stop - start);
-    //cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
-    //cout << duration.count() << " milliseconds" << endl;
-    //cout << "value of Y at random location" << endl;
+    stop = high_resolution_clock::now();
+    duration = duration_cast<milliseconds>(stop - start);
+    cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
+    cout << duration.count() << " milliseconds" << endl;
+    cout << "value of Y at random location" << endl;
     
 
     std::string o = "hello world";
@@ -99,5 +136,10 @@ int main()
         cout << "The following call will try to run a function that does not exist" << endl;
         Python.PythonFunction("PyAnotherModule", "oops", i, F, Y);
     }
-    return 0;
+    #ifdef CH_MPI
+    int r_mpi =MPI_Finalize();
+    #else
+    int r_mpi =0;
+    #endif
+    return r_mpi;
 };

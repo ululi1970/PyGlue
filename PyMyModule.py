@@ -36,4 +36,21 @@ def DoSomethingToV(v):
     W = pg.ValarrayToNumpy(v)
     W[0] = -1
     
+def IntValFAB(i, v, q):
+    print("-------")
+    print(v, q)
+    print("------")
     
+    Q = pg.FABToNumpy(q)
+    V = pg.ValarrayToNumpy(v)
+    print("*******")
+    print(V[-1])
+    print(Q[-1, -1, -1])
+    print(Q[10,0,0])
+    print("*******")
+    V[-1] = -5
+    Q[-1,-1,-1]=-6
+
+def threestr(str):
+    print(s)
+
