@@ -26,7 +26,8 @@
 #ifndef ___PyGlue_H__INCLUDED___
 #define ___PyGlue_H__INCLUDED___
 
-//#include "FArrayBox.H"
+//#define CH_assert(X) 
+//#define STATIC_ASSERT(X) {if (!X) {std::exit(-1);}}
 #include <Python.h>
 #include <sstream>
 #include <iostream>
@@ -34,7 +35,13 @@
 #include <map>
 #include <valarray>
 #include <type_traits>
-#include "MayDay.H"
+//#include "BCDescriptor.H"
+//#include "MayDay.H"
+
+//#include "AMRNSLevel.H"
+
+#include "FArrayBox.H"
+
 #define TYPEtoSTR(X)           \
   {if (std::is_same<T, X>::value) \
   {                       \

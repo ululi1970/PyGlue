@@ -395,6 +395,6 @@ void Py::lintcatcher(int a_i, std::string name)
   default:
     std::cout << a_i << "\n";
     MayDay::Warning("Py::lintcatcher() caught something wrong.");
-    MayDay::Error(name);
+    MayDay::Error(name.c_str());
   }
 }

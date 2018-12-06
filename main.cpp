@@ -3,9 +3,9 @@
 #include <iostream>
 #include <Python.h>
 #include <algorithm>
-#include <chrono>
+//#include <chrono>
 using namespace std;
-using namespace std::chrono;
+//using namespace std::chrono;
 
 Py Python;
 void testconst(const valarray<double>&v )
@@ -24,7 +24,7 @@ int main()
     std::valarray<int> XI(N);
     std::valarray<int> YI(N);
 
-    MayDay::StopOnExit(true);
+    //MayDay::StopOnExit(true);
 
     {
         auto f = []() -> float { return (rand() % 10) / 10.; };
@@ -39,18 +39,18 @@ int main()
         generate(begin(XI), end(XI), f);
     }
 
-    auto start = high_resolution_clock::now();
+    //auto start = high_resolution_clock::now();
     YD = tanh(XD);
-    auto stop = high_resolution_clock::now();
+    //auto stop = high_resolution_clock::now();
     Y=tanh(X);
     //cout << Y[129] << endl;
     // cout << X[129] << endl; // so that the optimizer does not play tricks
 
-    auto duration = duration_cast<milliseconds>(stop - start);
+    //auto duration = duration_cast<milliseconds>(stop - start);
 
-    cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
-    cout << duration.count() << " milliseconds" << endl;
-    cout << "value of Y at random location" << endl;
+    //cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
+    //cout << duration.count() << " milliseconds" << endl;
+    //cout << "value of Y at random location" << endl;
     
     const int i = 2;
     int j = 3;
@@ -67,13 +67,13 @@ int main()
     Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
     Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
     Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
-    start = high_resolution_clock::now();
+    //start = high_resolution_clock::now();
     Python.PythonFunction("PyMyModule", "ValVal", XD, YD, s);
-    stop = high_resolution_clock::now();
-    duration = duration_cast<milliseconds>(stop - start);
-    cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
-    cout << duration.count() << " milliseconds" << endl;
-    cout << "value of Y at random location" << endl;
+    //stop = high_resolution_clock::now();
+    //duration = duration_cast<milliseconds>(stop - start);
+    //cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
+    //cout << duration.count() << " milliseconds" << endl;
+    //cout << "value of Y at random location" << endl;
     
 
     std::string o = "hello world";
