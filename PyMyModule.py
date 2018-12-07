@@ -52,5 +52,5 @@ def IntValFAB(i, v, q):
     Q[-1,-1,-1]=-6
 
 def threestr(str):
-    print(s)
+    print(str)
 

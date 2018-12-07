@@ -25,8 +25,9 @@ int main(int argc, char* argv[])
     Str[0]="qui";
     Str[1]="quo";
     Str[2]="qua";
+    for (auto i=1; i<3; ++i){Str[0]+= Str[i];}
 
-    Python.PythonFunction("MyPyModule", "threestr", Str);
+    Python.PythonFunction("PyMyModule", "threestr", Str[0]);
     return 0;
     
     int N = 12 * 25 * 38;
