@@ -337,64 +337,14 @@ template <>
 inline PyObject *Py::pack(FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
-// basic packing functions for objects that are passed by copy
-/*template <>
-inline PyObject *Py::pack(double &a_x)
-{
-  double x = a_x;
-  return this->packDouble(x);
-}; // just to test.
-template <>
-inline PyObject *Py::pack(float &a_x)
-{
-  double x = a_x;
-  return this->packFloat(x);
-}; // just to test.
-template <>
-inline PyObject *Py::pack(int &a_i)
-{
-  int i = a_i;
-  return this->packInt(i);
-}; // pack an int
-template <>
-inline PyObject *Py::pack(bool &a_b)
-{
-  bool b = a_b;
-  return this->packBool(b);
-};
-*/
+
 template <>
 inline PyObject *Py::pack(std::string &a_s)
 {
   std::string s = a_s;
   return this->packString(s);
 };
-/*
-template <>
-inline PyObject *Py::pack(const double &a_x)
-{
-  double x = a_x;
-  return this->packDouble(x);
-}; // just to test.
-template <>
-inline PyObject *Py::pack(const float &a_x)
-{
-  double x = a_x;
-  return this->packFloat(x);
-}; // just to test.
-template <>
-inline PyObject *Py::pack(const int &a_i)
-{
-  int i = a_i;
-  return this->packInt(i);
-}; // pack an int
-template <>
-inline PyObject *Py::pack(const bool &a_b)
-{
-  bool b = a_b;
-  return this->packBool(b);
-};
-*/
+
 template <>
 inline PyObject *Py::pack(const std::string &a_s)
 {

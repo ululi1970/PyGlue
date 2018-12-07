@@ -109,7 +109,7 @@ PyObject *Py::packString(std::string s)
 
 std::string Py::unpackString(PyObject* a_pin)
 { char * o = PyUnicode_AsUTF8(a_pin);
-  std::cout << o << std::endl;
+  
   std::string s(o);
   return s;
 }
@@ -205,78 +205,7 @@ PyObject *Py::packFAB(FArrayBox &a_in)
   //again here we do not decref the items stored in pArgs, since the latter owns them now.
 };
 
-/* Initializes python, passing in component names and positions as well as parmParse parameters
- * moduleName: name of the python file minus the ".py" extension
- * initFunctionName: name of the initialization function in python
- * Returns a PyObject pointer to the module which will be passed in to other functions
- */
 
-/*void Py::initializePySomar(PyObject *pModule, std::string initFunctionName, State *statePtr)
-{
-
-  // Puts component names in an array to be pulled to Python
-  std::string compNames[statePtr->numComps];
-  for (int i = 0; i < statePtr->numScalars; i++)
-  {
-    compNames[i] = "XXX"; // this is a kludge for the moment. getScalarName(i);
-  }
-  addCompName(nuTComp);
-  addCompName(kappaTComp);
-  addCompName(uComp);
-  addCompName(vComp);
-  addCompName(wComp);
-  addCompName(bComp);
-  addCompName(pComp);
-  addCompName(phiComp);
-
-  PyObject *pName, *pInit, *pArgs, *pValue, *pInFile, *pStateNames;
-
-  pInit = PyObject_GetAttrString(pModule, initFunctionName.c_str());
-  if (pInit && PyCallable_Check(pInit))
-  {
-    std::ostringstream o;
-    ParmParse pp = ParmParse();
-    pp.dumpTable(o);
-    std::string ppString = o.str();
-    pInFile = PyUnicode_FromString(ppString.c_str());
-    pStateNames = PyTuple_New(statePtr->numComps);
-    for (int i = 0; i < statePtr->numComps; i++)
-    {
-      PyTuple_SetItem(pStateNames, i, PyUnicode_FromString(compNames[i].c_str()));
-    }
-    // Initialize Arguments tuple
-    pArgs = PyTuple_Pack(2, pInFile, pStateNames);
-    pValue = PyObject_CallObject(pInit, pArgs);
-    Py_DECREF(pArgs);
-    Py_DECREF(pInFile);
-    Py_DECREF(pStateNames);
-    // here we decref all of them because PyTuple_Pack does not "Steal" the references.
-    // This is different behavior from PyTuple_SetItem!
-    if (pValue != nullptr)
-    {
-      Py_DECREF(pValue);
-    }
-    else
-    {
-      Py_DECREF(pInit);
-      Py_DECREF(pModule);
-      PyErr_Print();
-      std::string o;
-      o = "Py::initializePySomar(" + initFunctionName + "). Something went wrong ";
-      MayDay::Error(o.c_str());
-    }
-  }
-  else
-  {
-    if (PyErr_Occurred())
-      PyErr_Print();
-    std::string o;
-      o = "Py::initializePySomar(" + initFunctionName + "). Cannot find file";
-      MayDay::Error(o.c_str());
-  }
-  Py_XDECREF(pInit);
-}
-*/
 Py::Py()
 {
   if (Py_IsInitialized())
