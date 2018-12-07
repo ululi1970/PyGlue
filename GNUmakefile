@@ -2,7 +2,7 @@
 ebase := main
 
 # Where do the Chombo libraries live?
-CHOMBO_HOME = /mnt/c/Users/Alberto/research/Chombo-3.1/lib
+CHOMBO_HOME = $(HOME)/Chombo-3.1_GCC/lib
 
 # Do you want to trap floating point errors?
 TRAPFPE = FALSE
