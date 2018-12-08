@@ -40,7 +40,7 @@
 #ifdef CHOMBO
 #include "FArrayBox.H"
 #endif 
-// this macro is to be used on arithmetic types
+// these macros are to be used on arithmetic and string types
 // note that the chicanery with the pointer is ok
 // since at the end of the day the whole expression 
 // is evaluated only if X and T are the same type. 
@@ -54,14 +54,6 @@
       return;                             \
     }                                     \
   }
-#define TYPEtoSTR(X)               \
-  {                                \
-    if (std::is_same<T, X>::value) \
-    {                              \
-      return #X;                   \
-    }                              \
-  }
-
 
 #define IFTYPEP(X, Y)              \
   {                                \
@@ -73,6 +65,15 @@
       return this->Y(*p);           \
     }                              \
   }
+  #define TYPEtoSTR(X)               \
+  {                                \
+    if (std::is_same<T, X>::value) \
+    {                              \
+      return #X;                   \
+    }                              \
+  }
+
+
 #define SAME(X) std::is_same<T, X>::value
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
@@ -353,21 +354,7 @@ template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 #endif
 
-/*
-template <>
-inline PyObject *Py::pack(std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
 
-template <>
-inline PyObject *Py::pack(const std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
-*/
 
 
   // In the above specializations, we make local copies to mimic the behavior of a function
