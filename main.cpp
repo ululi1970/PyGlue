@@ -21,14 +21,7 @@ int main(int argc, char* argv[])
     MPI_Init(&argc, &argv);
 #endif
 
-    std::string Str[3];
-    Str[0]="qui";
-    Str[1]="quo";
-    Str[2]="qua";
-    for (auto i=1; i<3; ++i){Str[0]+= Str[i];}
-
-    Python.PythonFunction("PyMyModule", "threestr", Str[0]);
-    return 0;
+    
     
     int N = 12 * 25 * 38;
     std::valarray<float> X(N);
@@ -55,7 +48,14 @@ int main(int argc, char* argv[])
     IntVect hi(hiV);
     Box b(lo,hi);
     FArrayBox q(b,1);
-
+    Python.PythonFunction("PyMyModule", "IntVect", hi);
+    RealVect rv(hi);
+    Python.PythonFunction("PyMyModule", "RealVect", rv);
+    int nx=32;
+    Python.PythonFunction("PyMyModule", "intBox", nx,b);
+    Box b1=Python.PythonReturnFunction<Box>("PyMyModule", "makeBox");
+    Python.PythonFunction("PyMyModule", "intBox", nx,b1);
+    return 0;
     q(hi,0)=5.0;
     q(lo,0)=10.0;
     valarray<Real> qVA(q.dataPtr(0),N);

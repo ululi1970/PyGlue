@@ -37,7 +37,7 @@
 //#include "MayDay.H"
 
 //#include "AMRNSLevel.H"
-
+#include "RealVect.H"
 #include "FArrayBox.H"
 
 #define TYPEtoSTR(X)               \
@@ -49,11 +49,16 @@
   }
 
 // this macro is to be used on arithmetic types
+// note that the chicanery with the pointer is ok
+// since at the end of the day the whole expression 
+// is evaluated only if X and T are the same type. 
 #define IFTYPEU(X, Y)                      \
   {                                       \
     if (std::is_same<T, X>::value)        \
-    {                                     \
-      t = static_cast<X>(this->Y(a_pin)); \
+    { X s=this->Y(a_pin); \
+     void* p=static_cast<void*>(&s);\
+      T* pr=reinterpret_cast<T*>(p);         \
+      t=*pr;   \
       return;                             \
     }                                     \
   }
@@ -105,11 +110,21 @@ private:
 //forward declarations
 PyObject *packFAB(FArrayBox &a_q);
   PyObject *packFAB(const FArrayBox &a_q);
+  PyObject *packIntVect(IntVect a_i);
+  
+  PyObject *packRealVect(RealVect a_i);
+  PyObject *packBox(Box a_b);
   PyObject *packDouble(double a_x);
   PyObject *packFloat(float a_x);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
+  
+
+  IntVect unpackIntVect(PyObject *a_pin);
+  RealVect unpackRealVect(PyObject *a_pin);
+  Box unpackBox(PyObject *a_pin);
+
   int unpackInt(PyObject *a_pin);
   float unpackFloat(PyObject *a_pin);
   double unpackDouble(PyObject *a_pin);
@@ -194,6 +209,12 @@ template <class U, class T>
     IFTYPEU(double, unpackDouble)
 
     IFTYPEU(float, unpackFloat)
+
+    IFTYPEU(IntVect, unpackIntVect)
+
+    IFTYPEU(Box, unpackBox)
+
+    IFTYPEU(RealVect, unpackRealVect)
     this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
   }
 
@@ -337,6 +358,23 @@ template <>
 inline PyObject *Py::pack(FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
+
+template <>
+inline PyObject *Py::pack(IntVect  & a_iv){ IntVect x = a_iv; return this->packIntVect(x); };
+template <>
+inline PyObject *Py::pack(RealVect & a_rv){ RealVect x= a_rv;return this->packRealVect(x);};
+
+template <>
+inline PyObject *Py::pack(const IntVect  & a_iv){ IntVect x = a_iv; return this->packIntVect(x); };
+template <>
+inline PyObject *Py::pack(const RealVect & a_rv){ RealVect x= a_rv;return this->packRealVect(x);};
+
+template <>
+inline PyObject *Py::pack(Box  & a_b){ Box x = a_b; return this->packBox(x); };
+template <>
+inline PyObject *Py::pack(const Box  & a_b){ Box x = a_b; return this->packBox(x); };
+
+
 
 template <>
 inline PyObject *Py::pack(std::string &a_s)

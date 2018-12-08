@@ -30,6 +30,7 @@
 #include <sstream>
 
 #include "PyGlue.H"
+
 #include "FArrayBox.H"
 
 #define addCompName(X) compNames[statePtr->X] = #X;
@@ -68,6 +69,35 @@ PyObject *makeViewFAB(const FArrayBox &a_in)
   return pView;
 }
 
+PyObject *Py::packBox(Box x){
+  IntVect b_le=x.smallEnd();
+  IntVect b_be=x.bigEnd();
+
+  PyObject *pBox = PyTuple_New(2*SpaceDim);
+  for (auto i=0; i<SpaceDim; ++i){
+    PyTuple_SetItem(pBox, i, PyLong_FromLong(b_le[i]));
+    PyTuple_SetItem(pBox, SpaceDim+i, PyLong_FromLong(b_be[i]));
+
+  }
+  return pBox;
+}
+
+PyObject *Py::packIntVect(IntVect x){
+  PyObject *pIntVect = PyTuple_New(SpaceDim);
+  for (auto i=0; i<SpaceDim; ++i){
+    PyTuple_SetItem(pIntVect, i, PyLong_FromLong(x[i]));
+  
+  }
+    return pIntVect;
+}
+PyObject *Py::packRealVect(RealVect x){
+  PyObject *pRealVect = PyTuple_New(SpaceDim);
+  for (auto i=0; i<SpaceDim; ++i){
+    PyTuple_SetItem(pRealVect, i, PyFloat_FromDouble(double(x[i])));
+  
+  }
+    return pRealVect;
+}
 // returns a pointer to a Python tuple containing a real
 
 PyObject *Py::packDouble(double a_x)
@@ -117,6 +147,37 @@ std::string Py::unpackString(PyObject* a_pin)
 bool Py::unpackBool(PyObject* a_pin)
 {
   return (a_pin == Py_True);
+}
+
+IntVect Py::unpackIntVect(PyObject * a_pin)
+{
+  IntVect r;
+  for(auto i=0; i<SpaceDim; ++i){
+    r[i]=static_cast<int>(PyLong_AsLong(PyTuple_GetItem(a_pin,i)));
+  }
+  return r;
+}
+
+RealVect Py::unpackRealVect(PyObject * a_pin)
+{
+  RealVect r;
+  for(auto i=0; i<SpaceDim; ++i){
+    r[i]=static_cast<Real>(PyFloat_AsDouble(PyTuple_GetItem(a_pin,i)));
+  }
+  return r;
+}
+
+Box Py::unpackBox(PyObject * a_pin)
+{
+  
+  IntVect lo;
+  IntVect hi;
+  for(auto i=0; i<SpaceDim; ++i){
+    lo[i]=static_cast<int>(PyLong_AsLong(PyTuple_GetItem(a_pin,i)));
+    hi[i]=static_cast<int>(PyLong_AsLong(PyTuple_GetItem(a_pin,SpaceDim+i)));
+  }
+  Box r(lo,hi);
+  return r;
 }
 
 int Py::unpackInt(PyObject * a_pin)

@@ -54,3 +54,14 @@ def IntValFAB(i, v, q):
 def threestr(str):
     print(str)
 
+def IntVect(s):
+    print(s)
+
+def RealVect(s):
+    print(s)
+
+def intBox(i,s):
+    print(s)    
+
+def makeBox():
+    return (0,0,0,12,12,12)    
