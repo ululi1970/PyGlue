@@ -64,4 +64,8 @@ def intBox(i,s):
     print(s)    
 
 def makeBox():
-    return (0,0,0,12,12,12)    
+    return (0,0,0,12,12,12)
+
+def makeRealVect(r):
+    return r
+

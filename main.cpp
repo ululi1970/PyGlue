@@ -55,6 +55,9 @@ int main(int argc, char* argv[])
     Python.PythonFunction("PyMyModule", "intBox", nx,b);
     Box b1=Python.PythonReturnFunction<Box>("PyMyModule", "makeBox");
     Python.PythonFunction("PyMyModule", "intBox", nx,b1);
+    RealVect r2=Python.PythonReturnFunction<RealVect>("PyMyModule", "makeRealVect",rv);
+    Python.PythonFunction("PyMyModule", "RealVect", rv);
+    Python.PythonFunction("PyMyModule", "RealVect", r2);
     return 0;
     q(hi,0)=5.0;
     q(lo,0)=10.0;
