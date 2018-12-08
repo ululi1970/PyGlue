@@ -40,6 +40,20 @@
 #ifdef CHOMBO
 #include "FArrayBox.H"
 #endif 
+// this macro is to be used on arithmetic types
+// note that the chicanery with the pointer is ok
+// since at the end of the day the whole expression 
+// is evaluated only if X and T are the same type. 
+#define IFTYPEU(X, Y)                      \
+  {                                       \
+    if (std::is_same<T, X>::value)        \
+    { X s=this->Y(a_pin); \
+     void* p=static_cast<void*>(&s);\
+      T* pr=reinterpret_cast<T*>(p);         \
+      t=*pr;   \
+      return;                             \
+    }                                     \
+  }
 #define TYPEtoSTR(X)               \
   {                                \
     if (std::is_same<T, X>::value) \
@@ -48,21 +62,15 @@
     }                              \
   }
 
-// this macro is to be used on arithmetic types
-#define IFTYPEU(X, Y)                      \
-  {                                       \
-    if (std::is_same<T, X>::value)        \
-    {                                     \
-      t = static_cast<X>(this->Y(a_pin)); \
-      return;                             \
-    }                                     \
-  }
+
 #define IFTYPEP(X, Y)              \
   {                                \
     if (std::is_same<T, X>::value) \
     {                              \
-      T x = t;                  \
-      return this->Y(static_cast<X>(x));           \
+                     \
+      void * pr =static_cast<void *>(const_cast<T*>(&t)); \
+      X* p=reinterpret_cast<X*>(pr);\
+      return this->Y(*p);           \
     }                              \
   }
 #define SAME(X) std::is_same<T, X>::value
@@ -197,6 +205,8 @@ template <class U, class T>
     IFTYPEU(double, unpackDouble)
 
     IFTYPEU(float, unpackFloat)
+
+    IFTYPEU(std::string, unpackString)
     this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
   }
 
@@ -210,7 +220,7 @@ template <class U, class T>
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
-    
+    IFTYPEP(std::string, packString)
 
     this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
@@ -219,14 +229,14 @@ template <class U, class T>
   template <class T>
   PyObject *pack(const T &t)
   {
-    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
+    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float)  || SAME(std::string) || SAME(double);
     static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
     
     IFTYPEP(bool,packBool)
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
- 
+    IFTYPEP(std::string,packString)
 
     this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
@@ -306,7 +316,7 @@ public:
   {
     PyObject *return_value = runFunction(Module, function, m_args);
     T t;
-    unpack(t, return_value);
+    unpack<T>(t, return_value);
     Py_DECREF(return_value);
     return t;
   };
@@ -343,6 +353,7 @@ template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 #endif
 
+/*
 template <>
 inline PyObject *Py::pack(std::string &a_s)
 {
@@ -356,12 +367,8 @@ inline PyObject *Py::pack(const std::string &a_s)
   std::string s = a_s;
   return this->packString(s);
 };
+*/
 
-template <>
-inline void Py::unpack(std::string &a_i, PyObject *a_pin)
-{
-  a_i = this->unpackString(a_pin);
-};
 
   // In the above specializations, we make local copies to mimic the behavior of a function
   // that is called by value. Apparently c++11 does not like mixing and matching of

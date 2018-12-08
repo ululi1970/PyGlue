@@ -4,6 +4,7 @@
 #include <Python.h>
 #include <algorithm>
 #include <chrono>
+#include <array>
 using namespace std;
 using namespace std::chrono;
 
@@ -23,6 +24,7 @@ int main()
     std::valarray<double> YD(N);
     std::valarray<int> XI(N);
     std::valarray<int> YI(N);
+    std::vector<float> AI(N);
 
     MayDay::StopOnExit(true);
 
@@ -38,7 +40,10 @@ int main()
         auto f = []() -> int { return (rand() % 10); };
         generate(begin(XI), end(XI), f);
     }
-
+    {
+        auto f=[]() ->float {return (rand() %10)/10.;};
+        generate(AI.begin(), AI.end(), f);
+    }
     auto start = high_resolution_clock::now();
     YD = tanh(XD);
     auto stop = high_resolution_clock::now();
@@ -74,7 +79,7 @@ int main()
     cout << "time used by Python np.tanh operating on a valarray<double>" << endl;
     cout << duration.count() << " milliseconds" << endl;
     cout << "value of Y at random location" << endl;
-    
+    Python.PythonFunction("PyMyModule", "IntIntVal",i,j, AI);
 
     std::string o = "hello world";
     Python.PythonFunction("PyAnotherModule", "PrintStringInt", o, l);
@@ -94,6 +99,8 @@ int main()
     std::string stringa = "ciao.";
     Python.PythonFunction("PyMyModule", "PrintStr", stringa);
     std::string sb = Python.PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
+Python.PythonFunction("PyMyModule", "PrintStr", sb);
+
     if (!Python.isFuncDefined("PyAnotherModule", "oops"))
     {
         cout << "The following call will try to run a function that does not exist" << endl;
