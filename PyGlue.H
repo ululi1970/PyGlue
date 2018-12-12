@@ -100,11 +100,24 @@
 
 #include <array>
 
-template<typename> struct PM_traits{
-};
-template<class T, class U> struct PM_traits<U T::*> {
-  using member_type = U;
-}; //dark magic used to check if a class as a .size() function. 
+//dark magic used to check if a class as a .size() function. 
+template<typename... Ts> struct make_void{typedef void type;};
+template<typename... Ts> using void_t = typename make_void<Ts...>::type;
+// note the above is not needed if using c++14,  
+template<typename T,  typename =  void> 
+struct has_size_func: std::false_type{}; // default to false if third argument cannot work
+
+template<typename T > 
+struct has_size_func<T, void_t<decltype(std::declval<T&>().size())> >: std::true_type{}; 
+// If the instantation of the Expression works, we set it to true, else we default to the false type
+
+// So now we have a mechanism to detect Expression 
+
+// now we work out the specific expression we need
+
+
+  
+
 
 #include "MayDay.H"
 

@@ -13,7 +13,7 @@ void testconst(const valarray<double>&v )
 {
     Python.PythonFunction("PyMyModule", "DoSomethingToV", v);
 }
-
+class A {};
 int main()
 {
 
@@ -25,7 +25,10 @@ int main()
     std::valarray<int> XI(N);
     std::valarray<int> YI(N);
     std::vector<float> AI(N);
-
+    cout << boolalpha;
+    cout<< "Are valarrays sizeable ? " << has_size_func<valarray<double>>::value << endl;
+    cout << "Are integers sizeable ? " << has_size_func<int>::value << endl;
+    cout << "Are maps sizeable ? " << has_size_func<map<std::string,int>>::value << endl;
     MayDay::StopOnExit(true);
 
     {
@@ -99,7 +102,7 @@ int main()
     std::string stringa = "ciao.";
     Python.PythonFunction("PyMyModule", "PrintStr", stringa);
     std::string sb = Python.PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
-Python.PythonFunction("PyMyModule", "PrintStr", sb);
+    Python.PythonFunction("PyMyModule", "PrintStr", sb);
 
     if (!Python.isFuncDefined("PyAnotherModule", "oops"))
     {
