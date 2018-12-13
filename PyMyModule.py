@@ -1,11 +1,16 @@
 import PyGlue as pg
 import numpy as np
+from numba import jit
+
 def ValVal(v,w,s):
     
     V = pg.ValarrayToNumpy(v)
     W = pg.ValarrayToNumpy(w)
-    
-    V[:]=s*np.tanh(W)
+    operate(V,W)
+@jit (nopython=True)
+def operate(V,W):
+    for i in range(len(W)):
+        V[i]=np.tanh(W[i])
     
 def IntIntVal(i, j, w):
    

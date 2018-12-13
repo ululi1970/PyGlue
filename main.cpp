@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
     cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
     cout << duration.count() << " milliseconds" << endl;
     
-    /*BoxIterator bit(b);
+    BoxIterator bit(b);
     start = high_resolution_clock::now();
     cout << "start test of bit() iterator " << endl;
     for (bit.begin(); bit.ok(); ++bit){
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
     duration = duration_cast<milliseconds>(stop - start);
     cout << "time used by doing bit() operation " << endl;
     cout << duration.count() << " milliseconds" << endl;
-    */
+    
     const int i = 2;
     int j = 3;
     int l = 1;
@@ -123,6 +123,7 @@ int main(int argc, char* argv[])
     Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
     Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
     Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
+    Python.PythonFunction("PyMyModule", "ValVal", XD, YD, s);
     start = high_resolution_clock::now();
     Python.PythonFunction("PyMyModule", "ValVal", XD, YD, s);
     stop = high_resolution_clock::now();
