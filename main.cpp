@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
     RealVect r2=Python.PythonReturnFunction<RealVect>("PyMyModule", "makeRealVect",rv);
     Python.PythonFunction("PyMyModule", "RealVect", rv);
     Python.PythonFunction("PyMyModule", "RealVect", r2);
-    return 0;
+    
     q(hi,0)=5.0;
     q(lo,0)=10.0;
     valarray<Real> qVA(q.dataPtr(0),N);
@@ -135,6 +135,7 @@ int main(int argc, char* argv[])
     std::string stringa = "ciao.";
     Python.PythonFunction("PyMyModule", "PrintStr", stringa);
     std::string sb = Python.PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
+    cout << sb << endl;
     if (!Python.isFuncDefined("PyAnotherModule", "oops"))
     {
         cout << "The following call will try to run a function that does not exist" << endl;

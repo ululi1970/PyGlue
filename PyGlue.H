@@ -50,8 +50,8 @@
 
 // this macro is to be used on arithmetic types
 // note that the chicanery with the pointer is ok
-// since at the end of the day the whole expression 
-// is evaluated only if X and T are the same type. 
+// since at the end of the day the whole expression
+// is evaluated only if X and T are the same type.
 #define IFTYPEU(X, Y)                      \
   {                                       \
     if (std::is_same<T, X>::value)        \
@@ -65,30 +65,33 @@
 #define IFTYPEP(X, Y)              \
   {                                \
     if (std::is_same<T, X>::value) \
-    {                              \
-      T x = t;                  \
-      return this->Y(static_cast<X>(x));           \
+    { void * p=static_cast<void*>(const_cast<T*>(&t));                             \
+      X* pr=reinterpret_cast<X*>(p); \
+      X x = *pr;                  \
+      return this->Y(x);           \
     }                              \
   }
+
+
 #define SAME(X) std::is_same<T, X>::value
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
 /* {Py Python;
     ....
     // this calls shows how to execute moduleName.funcName(arg1,arg2,arg3,...)
-    // on the Python interpreter. The return value 
+    // on the Python interpreter. The return value
     // (Python functions have always a return value, even if not explicitely declared)
-    // is discarded 
+    // is discarded
     Python.PythonFunction("moduleName", "funcName", arg1, arg2, arg3,...)
 
     // whereas this call stores the return value in the first argument
     Python.PythonFunction(return_value, "moduleName", "funcName", arg1, arg2, arg3,...)
 
-    // in the latter case, it is responsibility of the caller to properly dispose of it 
+    // in the latter case, it is responsibility of the caller to properly dispose of it
     // via a call to Py_DECREF() or Py_XDECREF().  This function is currently set to always
-    // return a nullptr. 
+    // return a nullptr.
     ....
-    
+
  */
 // Attention shoppers: this class is intended to instantiate a global variable!
 // If the constructor detects that a Python interpreter is already active,
@@ -96,11 +99,6 @@
 
 #include <array>
 
-template<typename> struct PM_traits{
-};
-template<class T, class U> struct PM_traits<U T::*> {
-  using member_type = U;
-}; //dark magic used to check if a class as a .size() function. 
 
 
 class Py
@@ -111,7 +109,7 @@ private:
 PyObject *packFAB(FArrayBox &a_q);
   PyObject *packFAB(const FArrayBox &a_q);
   PyObject *packIntVect(IntVect a_i);
-  
+
   PyObject *packRealVect(RealVect a_i);
   PyObject *packBox(Box a_b);
   PyObject *packDouble(double a_x);
@@ -119,7 +117,7 @@ PyObject *packFAB(FArrayBox &a_q);
   PyObject *packInt(int a_i);
   PyObject *packBool(bool a_b);
   PyObject *packString(std::string s);
-  
+
 
   IntVect unpackIntVect(PyObject *a_pin);
   RealVect unpackRealVect(PyObject *a_pin);
@@ -133,7 +131,7 @@ PyObject *packFAB(FArrayBox &a_q);
 
   void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
   PyObject *runFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
-  
+
   enum
   {
     MULTIPLE_INSTANCES_DETECTED = 0,
@@ -177,9 +175,9 @@ PyObject *packFAB(FArrayBox &a_q);
   template <class U, class T>
   PyObject *makeView(U &a_v)
   {
-    
+
     TypeOf<T>(); // will stop compilation if T is not in the list
-    
+
     unsigned long long size = a_v.size() * sizeof(T);
     char *p = reinterpret_cast<char *>(&(a_v[0]));
     return PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
@@ -187,17 +185,17 @@ PyObject *packFAB(FArrayBox &a_q);
 template <class U, class T>
   PyObject *makeView(const U &a_v)
   {
-    
+
     TypeOf<T>(); // will stop compilation if T is not in the list
-    
+
     unsigned long long size = a_v.size() * sizeof(T);
     char *p = reinterpret_cast<char *>(const_cast<T*>(&(a_v[0])));
-   
+
       return PyMemoryView_FromMemory(p, size, PyBUF_READ);
   }
-  
-  
-  
+
+
+
   // basic packing and unpacking template sfor objects that are are passed by reference
   template <class T>
   void unpack(T &t, PyObject *a_pin)
@@ -215,38 +213,47 @@ template <class U, class T>
     IFTYPEU(Box, unpackBox)
 
     IFTYPEU(RealVect, unpackRealVect)
+
+    IFTYPEU(std::string, unpackString)
     this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
   }
 
   template <class T>
   PyObject *pack(T &t)
   {
-    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
-    static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
-    T x = t;
+    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || \
+            SAME(std::string) || SAME(double) ||\
+            SAME(Box) || SAME(IntVect) || SAME (RealVect);
+    static_assert(check_type_is_defined, " Only bool, int, float, double, std::string Real and IntVEct and Box are supported, but feel free to add to the list and post back");
+    
     IFTYPEP(bool,packBool)
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
-    
+    IFTYPEP(std::string, packString)
+    IFTYPEP(Box, packBox)
+    IFTYPEP(IntVect, packIntVect)
+    IFTYPEP(RealVect, packRealVect)
 
-    this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
   };
 
   template <class T>
   PyObject *pack(const T &t)
   {
-    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
-    static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
-    
+    const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || \
+            SAME(std::string) || SAME(double) ||\
+            SAME(Box) || SAME(IntVect) || SAME (RealVect);
+    static_assert(check_type_is_defined, " Only bool, int, float, double, std::string Real and IntVEct and Box are supported, but feel free to add to the list and post back");
     IFTYPEP(bool,packBool)
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
- 
+    IFTYPEP(std::string, packString)
+    IFTYPEP(Box, packBox)
+    IFTYPEP(IntVect, packIntVect)
+    IFTYPEP(RealVect, packRealVect)
 
-    this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
   };
 
@@ -284,8 +291,8 @@ template <class U, class T>
   inline PyObject *pack(std::vector<T> &a_v) { return this->packCont<std::vector<T>,T>(a_v); };
   template <class T>
   inline PyObject *pack(const std::vector<T> &a_v) { return this->packCont<std::vector<T>,T>(a_v); };
-  
-  
+
+
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
@@ -358,43 +365,6 @@ template <>
 inline PyObject *Py::pack(FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
-
-template <>
-inline PyObject *Py::pack(IntVect  & a_iv){ IntVect x = a_iv; return this->packIntVect(x); };
-template <>
-inline PyObject *Py::pack(RealVect & a_rv){ RealVect x= a_rv;return this->packRealVect(x);};
-
-template <>
-inline PyObject *Py::pack(const IntVect  & a_iv){ IntVect x = a_iv; return this->packIntVect(x); };
-template <>
-inline PyObject *Py::pack(const RealVect & a_rv){ RealVect x= a_rv;return this->packRealVect(x);};
-
-template <>
-inline PyObject *Py::pack(Box  & a_b){ Box x = a_b; return this->packBox(x); };
-template <>
-inline PyObject *Py::pack(const Box  & a_b){ Box x = a_b; return this->packBox(x); };
-
-
-
-template <>
-inline PyObject *Py::pack(std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
-
-template <>
-inline PyObject *Py::pack(const std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
-
-template <>
-inline void Py::unpack(std::string &a_i, PyObject *a_pin)
-{
-  a_i = this->unpackString(a_pin);
-};
 
   // In the above specializations, we make local copies to mimic the behavior of a function
   // that is called by value. Apparently c++11 does not like mixing and matching of
