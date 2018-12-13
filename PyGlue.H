@@ -48,10 +48,18 @@
     }                              \
   }
 
-// this macro is to be used on arithmetic types
-// note that the chicanery with the pointer is ok
-// since at the end of the day the whole expression
-// is evaluated only if X and T are the same type.
+/* this macro is to be used on arithmetic types
+ note that the chicanery with the pointer is ok
+ since at the end of the day the whole expression
+ is evaluated only if X and T are the same type.
+ Note that since the argument of the if statement
+ evaluates to a compile-time constant, only 
+ the statement for which it is actually true 
+ is in fact compiled. The others are safely 
+ ignored. Thus, the function Y must be forward 
+ declared, but need not to be defined 
+ if the corresponding type X is never used. 
+*/
 #define IFTYPEU(X, Y)                      \
   {                                       \
     if (std::is_same<T, X>::value)        \
@@ -62,16 +70,24 @@
       return;                             \
     }                                     \
   }
-#define IFTYPEP(X, Y)              \
+#define IFTYPEPACKCOPY(X, Y)              \
   {                                \
     if (std::is_same<T, X>::value) \
-    { void * p=static_cast<void*>(const_cast<T*>(&t));                             \
+    { void * p=static_cast<void*>(const_cast<T*>(&t));  \
       X* pr=reinterpret_cast<X*>(p); \
       X x = *pr;                  \
       return this->Y(x);           \
     }                              \
   }
-
+#define IFTYPEPACKREFERENCE(X, Y)              \
+  {                                \
+    if (std::is_same<T, X>::value) \
+    { void * p=static_cast<void*>(const_cast<T*>(&t));  \
+      X* pr=reinterpret_cast<X*>(p); \
+                        \
+      return this->Y(*pr);           \
+    }                              \
+  }
 
 #define SAME(X) std::is_same<T, X>::value
 // The purpose of this class is to be able to run functions on Python
@@ -82,20 +98,37 @@
     // on the Python interpreter. The return value
     // (Python functions have always a return value, even if not explicitely declared)
     // is discarded
-    Python.PythonFunction("moduleName", "funcName", arg1, arg2, arg3,...)
+    Python.PythonFunction("moduleName", "funcName", arg1, arg2, arg3,...);
 
-    // whereas this call stores the return value in the first argument
-    Python.PythonFunction(return_value, "moduleName", "funcName", arg1, arg2, arg3,...)
+    // whereas this calls a function with a return value of tipe T  
+    T r=Python.PythonReturnFunction<T>("moduleName", "funcName", arg1, arg2, arg3,...);
 
-    // in the latter case, it is responsibility of the caller to properly dispose of it
-    // via a call to Py_DECREF() or Py_XDECREF().  This function is currently set to always
-    // return a nullptr.
+    // 
     ....
 
  */
 // Attention shoppers: this class is intended to instantiate a global variable!
 // If the constructor detects that a Python interpreter is already active,
-// it will throw an exception
+// it will throw an exception. 
+
+/*
+How it works: when the compiler encounter a call to PythonFunction (or PythonReturnFunction), 
+the arguments after the first two are recursively sent to a packing function 
+(packT, where T is the type 
+of the arg) which turns the data members of the argument into the corresponding  PyObject. 
+packT must be provided by the user both for const and non const arguments. 
+For types that have a copy constructor, we can use the macro IFTYPEPACKCOPY(X,Y), where X is the type T and Y is
+packT. This macro is then used in the templated pack function. These types are passed by making a copy. 
+For types that do not have a copy constructor, the user must define specialized packT routines (const and non 
+const) and overload pack (see example for FABs). 
+Finally, for containers type that are themselves templates, we need to specialize pack as shown for 
+valarrays and arrays. A similar mechanism applies to functions with a return argument. 
+
+Once the right pack is called, the output is pushed into a vector. At the end of the recursion, 
+the vector contains the PyObjects corresponding to the argument lists. These PyObjects are packed into
+a tuple which is then passed as argument to the Python function. 
+
+*/
 
 #include <array>
 
@@ -226,15 +259,16 @@ template <class U, class T>
             SAME(Box) || SAME(IntVect) || SAME (RealVect);
     static_assert(check_type_is_defined, " Only bool, int, float, double, std::string Real and IntVEct and Box are supported, but feel free to add to the list and post back");
     
-    IFTYPEP(bool,packBool)
-    IFTYPEP(int, packInt)
-    IFTYPEP(double, packDouble)
-    IFTYPEP(float, packFloat)
-    IFTYPEP(std::string, packString)
-    IFTYPEP(Box, packBox)
-    IFTYPEP(IntVect, packIntVect)
-    IFTYPEP(RealVect, packRealVect)
+    IFTYPEPACKCOPY(bool,packBool)
+    IFTYPEPACKCOPY(int, packInt)
+    IFTYPEPACKCOPY(double, packDouble)
+    IFTYPEPACKCOPY(float, packFloat)
+    IFTYPEPACKCOPY(std::string, packString)
+    IFTYPEPACKCOPY(Box, packBox)
+    IFTYPEPACKCOPY(IntVect, packIntVect)
+    IFTYPEPACKCOPY(RealVect, packRealVect)
 
+   
     return static_cast<PyObject *>(nullptr);
   };
 
@@ -245,15 +279,16 @@ template <class U, class T>
             SAME(std::string) || SAME(double) ||\
             SAME(Box) || SAME(IntVect) || SAME (RealVect);
     static_assert(check_type_is_defined, " Only bool, int, float, double, std::string Real and IntVEct and Box are supported, but feel free to add to the list and post back");
-    IFTYPEP(bool,packBool)
-    IFTYPEP(int, packInt)
-    IFTYPEP(double, packDouble)
-    IFTYPEP(float, packFloat)
-    IFTYPEP(std::string, packString)
-    IFTYPEP(Box, packBox)
-    IFTYPEP(IntVect, packIntVect)
-    IFTYPEP(RealVect, packRealVect)
+    IFTYPEPACKCOPY(bool,packBool)
+    IFTYPEPACKCOPY(int, packInt)
+    IFTYPEPACKCOPY(double, packDouble)
+    IFTYPEPACKCOPY(float, packFloat)
+    IFTYPEPACKCOPY(std::string, packString)
+    IFTYPEPACKCOPY(Box, packBox)
+    IFTYPEPACKCOPY(IntVect, packIntVect)
+    IFTYPEPACKCOPY(RealVect, packRealVect)
 
+   
     return static_cast<PyObject *>(nullptr);
   };
 

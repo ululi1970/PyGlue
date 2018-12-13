@@ -5,7 +5,7 @@
 #include <Python.h>
 #include <algorithm>
 #include <chrono>
-
+#include "BoxIterator.H"
 using namespace std;
 using namespace std::chrono;
 
@@ -21,9 +21,10 @@ int main(int argc, char* argv[])
     MPI_Init(&argc, &argv);
 #endif
 
-    
-    
-    int N = 12 * 25 * 38;
+    int nx =120;
+    int ny=250;
+    int nz=380;
+    int N = nx*ny*nz;
     std::valarray<float> X(N);
     std::valarray<float> Y(N);
     std::valarray<double> XD(N);
@@ -40,18 +41,19 @@ int main(int argc, char* argv[])
     IntVect lo(loV);
 
     std::vector<int> hiv;
-    hiv.push_back(11);
-     hiv.push_back(24);
-      hiv.push_back(37);
+    hiv.push_back(nx-1);
+     hiv.push_back(ny-1);
+      hiv.push_back(nz-1);
       cout<< hiv[0] << endl;
       Vector<int> hiV(hiv);
     IntVect hi(hiV);
     Box b(lo,hi);
     FArrayBox q(b,1);
+    FArrayBox q1(b,1);
     Python.PythonFunction("PyMyModule", "IntVect", hi);
     RealVect rv(hi);
     Python.PythonFunction("PyMyModule", "RealVect", rv);
-    int nx=32;
+  
     Python.PythonFunction("PyMyModule", "intBox", nx,b);
     Box b1=Python.PythonReturnFunction<Box>("PyMyModule", "makeBox");
     Python.PythonFunction("PyMyModule", "intBox", nx,b1);
@@ -61,6 +63,8 @@ int main(int argc, char* argv[])
     
     q(hi,0)=5.0;
     q(lo,0)=10.0;
+    
+
     valarray<Real> qVA(q.dataPtr(0),N);
 
     cout<< qVA[N-1] << endl;
@@ -81,16 +85,27 @@ int main(int argc, char* argv[])
     auto start = high_resolution_clock::now();
     YD = tanh(XD);
     auto stop = high_resolution_clock::now();
-    Y=tanh(X);
-    cout << Y[129] << endl;
-     cout << X[129] << endl; // so that the optimizer does not play tricks
+    
 
     auto duration = duration_cast<milliseconds>(stop - start);
 
     cout << "time used by native C++ tanh operating on a valarray<double>" << endl;
     cout << duration.count() << " milliseconds" << endl;
-    cout << "value of Y at random location" << endl;
     
+    /*BoxIterator bit(b);
+    start = high_resolution_clock::now();
+    cout << "start test of bit() iterator " << endl;
+    for (bit.begin(); bit.ok(); ++bit){
+        IntVect iv=bit();
+        
+        q1(iv,0)=tanh(q(iv,0));
+
+    }
+    stop = high_resolution_clock::now();
+    duration = duration_cast<milliseconds>(stop - start);
+    cout << "time used by doing bit() operation " << endl;
+    cout << duration.count() << " milliseconds" << endl;
+    */
     const int i = 2;
     int j = 3;
     int l = 1;
