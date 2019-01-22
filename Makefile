@@ -20,7 +20,6 @@ main.o: PyGlue.H MayDay.o
 PyGlue.o: PyGlue.H MayDay.o
 
 MayDay.o: MayDay.H
-	$(GCC) $(INCDIR) -c $<
 
 main:  PyGlue.H  PyGlue.o MayDay.o main.o 
 	$(GCC) $(LIBDIR)  PyGlue.o MayDay.o main.o  $(LIBS) -o main 
