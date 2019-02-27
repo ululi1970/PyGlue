@@ -1,6 +1,6 @@
 
 
-GCC=g++ -O3 -std=c++11  
+GCC=g++ -g -std=c++11  
 
 PYVER=3.6
 
