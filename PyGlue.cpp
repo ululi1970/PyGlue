@@ -1,8 +1,7 @@
 /*******************************************************************************
- *  SOMAR - Stratified Ocean Model with Adaptive Refinement
- *  Developed by Ed Santilli & Alberto Scotti
+ *  PyGlue
+ *  Developed by Alberto Scotti
  *  Copyright (C) 2018
- *    Jefferson (Philadelphia University + Thomas Jefferson University) and
  *    University of North Carolina at Chapel Hill
  *
  *  This library is free software; you can redistribute it and/or
@@ -21,7 +20,7 @@
  *  USA
  *
  *  For up-to-date contact information, please visit the repository homepage,
- *  https://github.com/somarhub.
+ *  https://github.com/ululi1970/PyGlue.
  ******************************************************************************/
 
 //#include "FArrayBox.H"
@@ -90,7 +89,7 @@ PyObject *Py::packString(std::string s)
 
 std::string Py::unpackString(PyObject* a_pin)
 { char * o = PyUnicode_AsUTF8(a_pin);
-  std::cout << o << std::endl;
+  
   std::string s(o);
   return s;
 }

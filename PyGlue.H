@@ -1,8 +1,7 @@
 /*******************************************************************************
- *  SOMAR - Stratified Ocean Model with Adaptive Refinement
- *  Developed by Ed Santilli & Alberto Scotti
+ *  PyGlue
+ *  Developed by Alberto Scotti
  *  Copyright (C) 2018
- *    Jefferson (Philadelphia University + Thomas Jefferson University) and
  *    University of North Carolina at Chapel Hill
  *
  *  This library is free software; you can redistribute it and/or
@@ -21,7 +20,7 @@
  *  USA
  *
  *  For up-to-date contact information, please visit the repository homepage,
- *  https://github.com/somarhub.
+ *  https://github.com/ululi1970/PyGlue.
  ******************************************************************************/
 #ifndef ___PyGlue_H__INCLUDED___
 #define ___PyGlue_H__INCLUDED___
@@ -39,7 +38,33 @@
 //#include "AMRNSLevel.H"
 #ifdef CHOMBO
 #include "FArrayBox.H"
-#endif 
+#endif
+// these macros are to be used on arithmetic and string types
+// note that the chicanery with the pointer is ok
+// since at the end of the day the whole expression
+// is evaluated only if X and T are the same type.
+#define IFTYPEU(X, Y)                    \
+  {                                      \
+    if (std::is_same<T, X>::value)       \
+    {                                    \
+      X s = this->Y(a_pin);              \
+      void *p = static_cast<void *>(&s); \
+      T *pr = reinterpret_cast<T *>(p);  \
+      t = *pr;                           \
+      return;                            \
+    }                                    \
+  }
+
+#define IFTYPEP(X, Y)                                      \
+  {                                                        \
+    if (std::is_same<T, X>::value)                         \
+    {                                                      \
+                                                           \
+      void *pr = static_cast<void *>(const_cast<T *>(&t)); \
+      X *p = reinterpret_cast<X *>(pr);                    \
+      return this->Y(*p);                                  \
+    }                                                      \
+  }
 #define TYPEtoSTR(X)               \
   {                                \
     if (std::is_same<T, X>::value) \
@@ -48,23 +73,6 @@
     }                              \
   }
 
-// this macro is to be used on arithmetic types
-#define IFTYPEU(X, Y)                      \
-  {                                       \
-    if (std::is_same<T, X>::value)        \
-    {                                     \
-      t = static_cast<X>(this->Y(a_pin)); \
-      return;                             \
-    }                                     \
-  }
-#define IFTYPEP(X, Y)              \
-  {                                \
-    if (std::is_same<T, X>::value) \
-    {                              \
-      T x = t;                  \
-      return this->Y(static_cast<X>(x));           \
-    }                              \
-  }
 #define SAME(X) std::is_same<T, X>::value
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
@@ -91,23 +99,77 @@
 
 #include <array>
 
-template<typename> struct PM_traits{
+//dark magic used to check if a class as a .size() function.
+template <typename... Ts>
+struct make_void
+{
+  typedef void type;
 };
-template<class T, class U> struct PM_traits<U T::*> {
-  using member_type = U;
-}; //dark magic used to check if a class as a .size() function. 
+template <typename... Ts>
+using void_t = typename make_void<Ts...>::type;
+// note the above is not needed if using c++14,
+template <typename T, typename = void>
+struct has_size_func : std::false_type
+{
+}; // default to false if third argument cannot work
+
+template <typename T>
+struct has_size_func<T, void_t<decltype(std::declval<T &>().size())>> : std::true_type
+{
+};
+// If the instantation of the Expression works, we set it to true, else we default to the false type
+
+/* the following is an alternative version that achieve the same result 
+
+// simple routine to test if a class has a member named size of numbytes (or whatever)
+// The caveat is that the member has to have a return type for which sizeof() 
+// must be defined (so this rules out void functions). 
+// 
+// example 
+// ...
+// class A{ int size();};
+// has_size<A>::value; // this will return TRUE
+// has_size<int>::value; // this will return FALSE
+//
+// It works because when the static member ::value is calculated during 
+// instantiation, it will try first to use one of the test functions 
+// with an actual template. Only if those fails because the return value cannot
+// be deduced, it will fall back on the default one, which has size M; 
+// it is possible to specify M if, for some weird reason, you expect 
+// siaeof(T::size()) to have size equal to 1000; 
+*/
+template <typename T, int M = 1000>
+struct has_size
+{
+private:
+  typedef char no[M];
+  template <typename C>
+  static auto test(C a) -> decltype(std::declval<C>().size());
+  template <typename>
+  static no &test(...);
+
+  T t;
+
+public:
+  static const bool value = sizeof(test<T>(t)) != sizeof(no);
+};
+
+
+
+// So now we have a mechanism to detect Expression
+
+// now we work out the specific expression we need
 
 #include "MayDay.H"
 
 class Py
 {
 private:
-
 //forward declarations
 #ifdef CHOMBO
-PyObject *packFAB(FArrayBox &a_q);
+  PyObject *packFAB(FArrayBox &a_q);
   PyObject *packFAB(const FArrayBox &a_q);
-#endif   
+#endif
   PyObject *packDouble(double a_x);
   PyObject *packFloat(float a_x);
   PyObject *packInt(int a_i);
@@ -121,7 +183,7 @@ PyObject *packFAB(FArrayBox &a_q);
 
   void runVoidFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
   PyObject *runFunction(std::string Module, std::string function, std::vector<PyObject *> arg);
-  
+
   enum
   {
     MULTIPLE_INSTANCES_DETECTED = 0,
@@ -165,27 +227,25 @@ PyObject *packFAB(FArrayBox &a_q);
   template <class U, class T>
   PyObject *makeView(U &a_v)
   {
-    
+
     TypeOf<T>(); // will stop compilation if T is not in the list
-    
+
     unsigned long long size = a_v.size() * sizeof(T);
     char *p = reinterpret_cast<char *>(&(a_v[0]));
     return PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
   }
-template <class U, class T>
+  template <class U, class T>
   PyObject *makeView(const U &a_v)
   {
-    
+
     TypeOf<T>(); // will stop compilation if T is not in the list
-    
+
     unsigned long long size = a_v.size() * sizeof(T);
-    char *p = reinterpret_cast<char *>(const_cast<T*>(&(a_v[0])));
-   
-      return PyMemoryView_FromMemory(p, size, PyBUF_READ);
+    char *p = reinterpret_cast<char *>(const_cast<T *>(&(a_v[0])));
+
+    return PyMemoryView_FromMemory(p, size, PyBUF_READ);
   }
-  
-  
-  
+
   // basic packing and unpacking template sfor objects that are are passed by reference
   template <class T>
   void unpack(T &t, PyObject *a_pin)
@@ -197,6 +257,8 @@ template <class U, class T>
     IFTYPEU(double, unpackDouble)
 
     IFTYPEU(float, unpackFloat)
+
+    IFTYPEU(std::string, unpackString)
     this->lintcatcher(CANNOT_UNPACK_TYPE, " unpack");
   }
 
@@ -206,11 +268,11 @@ template <class U, class T>
     const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
     static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
     T x = t;
-    IFTYPEP(bool,packBool)
+    IFTYPEP(bool, packBool)
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
-    
+    IFTYPEP(std::string, packString)
 
     this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
@@ -221,21 +283,21 @@ template <class U, class T>
   {
     const bool check_type_is_defined = SAME(bool) || SAME(int) || SAME(float) || SAME(std::string) || SAME(double);
     static_assert(check_type_is_defined, " Only bool, int, float, double and std::string are supported, but feel free to add to the list and post back");
-    
-    IFTYPEP(bool,packBool)
+
+    IFTYPEP(bool, packBool)
     IFTYPEP(int, packInt)
     IFTYPEP(double, packDouble)
     IFTYPEP(float, packFloat)
- 
+    IFTYPEP(std::string, packString)
 
     this->lintcatcher(CANNOT_PACK_TYPE, " pack"); //TODO: catch exception at compile time.
     return static_cast<PyObject *>(nullptr);
   };
 
-
   template <class U, class T>
-  PyObject* packCont( U & a_v){
-    PyObject *pView = makeView<U,T>(a_v);
+  PyObject *packCont(U &a_v)
+  {
+    PyObject *pView = makeView<U, T>(a_v);
     PyObject *pSize = PyLong_FromLong(a_v.size());
     PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>().c_str());
     PyObject *pArgs = PyTuple_New(3);
@@ -243,12 +305,12 @@ template <class U, class T>
     PyTuple_SetItem(pArgs, 1, pTypeOfT);
     PyTuple_SetItem(pArgs, 2, pView);
     return pArgs;
-
   }
 
   template <class U, class T>
-  PyObject* packCont( const U & a_v){
-    PyObject *pView = makeView<U,T>(a_v);
+  PyObject *packCont(const U &a_v)
+  {
+    PyObject *pView = makeView<U, T>(a_v);
     PyObject *pSize = PyLong_FromLong(a_v.size());
     PyObject *pTypeOfT = PyUnicode_FromString(TypeOf<T>().c_str());
     PyObject *pArgs = PyTuple_New(3);
@@ -256,18 +318,16 @@ template <class U, class T>
     PyTuple_SetItem(pArgs, 1, pTypeOfT);
     PyTuple_SetItem(pArgs, 2, pView);
     return pArgs;
-
   }
   template <class T>
-  inline PyObject *pack(std::valarray<T> &a_v) { return this->packCont<std::valarray<T>,T>(a_v); };
+  inline PyObject *pack(std::valarray<T> &a_v) { return this->packCont<std::valarray<T>, T>(a_v); };
   template <class T>
-  inline PyObject *pack(const std::valarray<T> &a_v) { return this->packCont<std::valarray<T>,T>(a_v); };
+  inline PyObject *pack(const std::valarray<T> &a_v) { return this->packCont<std::valarray<T>, T>(a_v); };
   template <class T>
-  inline PyObject *pack(std::vector<T> &a_v) { return this->packCont<std::vector<T>,T>(a_v); };
+  inline PyObject *pack(std::vector<T> &a_v) { return this->packCont<std::vector<T>, T>(a_v); };
   template <class T>
-  inline PyObject *pack(const std::vector<T> &a_v) { return this->packCont<std::vector<T>,T>(a_v); };
-  
-  
+  inline PyObject *pack(const std::vector<T> &a_v) { return this->packCont<std::vector<T>, T>(a_v); };
+
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T &t)
@@ -306,7 +366,7 @@ public:
   {
     PyObject *return_value = runFunction(Module, function, m_args);
     T t;
-    unpack(t, return_value);
+    unpack<T>(t, return_value);
     Py_DECREF(return_value);
     return t;
   };
@@ -338,30 +398,13 @@ private:
 //specializations
 #ifdef CHOMBO
 template <>
-inline PyObject *Py::pack(FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
+inline PyObject *Py::pack(FArrayBox &a_q)
+{
+  return this->packFAB(a_q);
+}; // return an object that Python uses to alias a_q to a numpy
 template <>
 inline PyObject *Py::pack(const FArrayBox &a_q) { return this->packFAB(a_q); }; // return an object that Python uses to alias a_q to a numpy
 #endif
-
-template <>
-inline PyObject *Py::pack(std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
-
-template <>
-inline PyObject *Py::pack(const std::string &a_s)
-{
-  std::string s = a_s;
-  return this->packString(s);
-};
-
-template <>
-inline void Py::unpack(std::string &a_i, PyObject *a_pin)
-{
-  a_i = this->unpackString(a_pin);
-};
 
   // In the above specializations, we make local copies to mimic the behavior of a function
   // that is called by value. Apparently c++11 does not like mixing and matching of
