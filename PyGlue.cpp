@@ -88,7 +88,7 @@ PyObject *Py::packString(std::string s)
 }
 
 std::string Py::unpackString(PyObject* a_pin)
-{ char * o = PyUnicode_AsUTF8(a_pin);
+{ const char * o = PyUnicode_AsUTF8(a_pin);
   
   std::string s(o);
   return s;
