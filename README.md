@@ -1,30 +1,29 @@
 # PyGlue
 A simple C++ library to pass variables, run code and retrieve data on a Python interpreter from within a C++ code.
 See the header file and the file main.cpp for examples of use. 
-This class relies on C++11 features. On GCC 4.8, 
-the flag -std=c++11 must be set.  
-At the moment, the following types can be passed as arguments and retrieved as return value from function: std::string, int, bool, float and double. The library also supports array<T> and valarray<T> as function arguments, wiht T being int, float and double. Since normally these types are used to store large data, we only implemented them as function arguments to avoid unnecessary deep copies. For all types, both const and non const arguments are supported. However, note that regardless, the symple types (boo, int,..) are always passed by value. If a return value is needed, it can be obtained as a return value. The compound data is alwasy passed by reference. What this means is that a pointer to the buffer is passed to Python, which thus gives access to the data store. In case the variable is flagged as const, the corresponding numpy is flagged as read_ony. Attemp to write to it will cause the program to stop. 
+This class relies on C++14 features.   
+At the moment, the following types can be passed as arguments and retrieved as return value from function: std::string, int, bool, float and double. array<T> are passed in such a way that a numoy can be aliased to them on the Python side.   For all types, both const and non const and rvalues arguments are supported. However, note that regardless, the symple types (boo, int,..) are always passed by value. If a return value is needed, it can be obtained as a return value.  What this means is that a pointer to the buffer is passed to Python, which thus gives access to the data store. In case the variable is flagged as const, the corresponding numpy is flagged as read_ony. Attemp to write to it will cause the program to stop. A generic class can be passed (by reference) if it implements a PyObject* T::pack() that creates the appropriate data structure (see main.cpp for examples). Likewise, a class T that has a copy constructor and an assignment constructor can be created from data generated in Python if it implements
+a constructor that acepts a PyObject* as argument.  
 
 
-A simple example: Suppose we want to perform Z=X^M+A*Y^N, where A is double, and X,Y,Z are valarray<double>s and 
-M,N are integers. In Python this would be accomplished writing a py file (call it ham.py)
-```python
+A simple example: Suppose we want to perform Z=X^M+A*Y^N, where A is double, and X,Y,Z are vector<double>s and 
+M,N are integers. We already have a script, called spam in a module ham.py. 
+```python (ham.py)
     import PyGlue as pg # this file contains utilities to convert input data.
-
-    def spam(X,Y,Z,M,N,A):
-        x,y,z=pg.ValarrayToNumpy(X),pg.ValarrayToNumpy(Y),pg.ValarrayToNumpy(Z) # the tuples passed 
-        z=np.power(x,M[0])+A[0]*np.power(y,N)
-        # since x,y and z access the same memory buffer of X,Y and Z, there is no need to call a
-        # NumpyToValarray function at the end. 
+    @pg.PYGLUE # this decorator turns the tuples passed by C++ into the corresponding objects in Python
+    def spam(X,Y,Z,M,N,A): 
+        Z=np.power(X,M)+A*np.power(Y,N)
+        # no return. Z aliases the corresponding vector in C++
 ```
+Note that we did not have to do anything to spam to run it. The decorator takes care of converting the inputs behind the scene. 
 
 On the C++ side, 
 ```c++
     {....
     Py Python; 
-    valarray<float> X,Y,Z; 
+    vector<double> X,Y,Z; 
     int M,N;
-    float A;
+    double A;
     ... // init/create the variables as needed
 
     Python.PythonFunction("ham","spam",X,Y,Z,M,N,A);
@@ -34,22 +33,26 @@ On the C++ side,
     }
 ```
 Note that Py::PythonFunction requires the first two std::string arguments. The number and type of the remaining arguments 
-is arbitrary, without the need to do anything else (e.g., create wrappers). PyGlue will use template metaprogramming to 
-generate the appropriate code. The only thing that the user needs to do is to make sure that ham.py contains a function spam which accepts 5 arguments, and use the appropriate functions to convert them to numpy if necessary. 
-See also the main.cpp file for more example of usage.  
+is arbitrary, without the need to do anything else (e.g., create wrappers). 
+PyGlue will use template metaprogramming to 
+generate the appropriate code. The only thing that the user needs to do is to make sure that ham.py contains a function spam which accepts 5 arguments.
+For examples on how to transfer more complex data structures and more example of usages 
+see main.cpp.   
 
 # Design considerations
 
-The library is designed to minimize deep copies. To this effect, only basic types (bool, std::string, int, float and double) are passed by value, and can be returned  as function values. Data rich structures (e.g., valarrays) are instead aliased into numpys, without deep copies. 
+The library is designed to minimize deep copies. To this effect, only basic types (bool, std::string, int, float and double) are passed by value, and can be returned  as function values. Data rich structures (e.g., vectors) are instead aliased into numpys, without deep copies. As a rule of thumb, data that lives 
+on the stack should be copied, data on heap should be aliased.  
 
 # Memory management
 
-Python's memory is managed by an automatic garbage collector. Any object in Python is reference counted: when the reference count hits zero, the garbage collector gets to work. C++ is of course different: For classes that require allocation, the user has to provide an explicit destructor to make sure resources are released when done with an instantiation of the class. When we interact with the Python interpreter, we need to be cognizant of the difference. With few exceptions, all interactions with the interpreter generate pointers to PyObject objects. While totally opaque from the point of view of C++, they can be classified in three categories: "New", "Stolen" and "Borrowed" (this is Python lingo). "New" objects are generated by the interpreter and are passed to C++, e.g. as the return value of a function. When done with a "New" object, it needs to be disposed of properly, by calling Py_DECREF() on it. If there is a chance that the object may be a null pointer (e.g., when returning from a Python function that does not have an explicit return XXX statement), use Py_XDECREF() instead. "Stolen" objects are objects that are included in compound structures: e.g., when we pack a bunch of PyObjects into a tuple to be passed to a function as a single argument. Typically this happens with XXX_SetItem() calls. The "stolen" objects will be released when the structure they have been included into is Py_DECREF().
+Python's memory is managed by an automatic garbage collector. Any object in Python is reference counted: when the reference count hits zero, the garbage collector gets to work. C++ is of course different: For classes that require allocation, the user has to provide an explicit destructor to make sure resources are released when done with an instantiation of the class. When we interact with the Python interpreter, we need to be cognizant of the difference. With few exceptions, all interactions with the interpreter generate pointers to PyObject objects. While totally opaque from the point of view of C++, they can be classified in three categories: "New", "Stolen" and "Borrowed" (this is Python lingo). "New" objects are generated by the interpreter and are passed to C++, e.g. as the return value of a function. When done with a "New" object, it needs to be disposed of properly, by calling Py_DECREF() on it. If there is a chance that the object may be a null pointer (e.g., when returning from a Python function that does not have an explicit return XXX statement), use Py_XDECREF() instead. "Stolen" objects are objects that are included in compound structures: e.g., when we pack a bunch of PyObjects into a tuple to be passed to a function as a single argument. Typically this happens with XXX_SetItem() calls. The "stolen" objects will be released when the structure they have been included into is Py_DECREF(). 
 In other words, Py_DECREF descends into each object and checks if their ref count is zero. If so, they are zapped.  
-The trickiest objects are the "borrowed" ones. These are objects that have been gotten from another object, typically with a XXX_GetItem() call. If we are planning to hold on the object for a while, during which there is a potential for the other object to get zapped, we need to increase the reference count of the borrowed object, to prevent from being zapped should the original owner be zapped. We do this by Py_INCREF(). 
+When processing a request to run a Python script in C++, the arguments are stored as they are processed by the packing function in a vector. Then this vector is processed and all entries are packed into a tuple, which is finally passed to the Python interpreter. Upon return, the pointer of this tuple is Decref'd, which in turns applies the garbage collector to everything that is contained in it.  
+The trickiest objects are the "borrowed" ones. These are objects that have been gotten from another object, typically with a XXX_GetItem() call. If we are planning to hold on the object for a while, during which there is a potential for the other object to get zapped, we need to increase the reference count of the borrowed object, to prevent from being zapped should the original owner be zapped. We do this by Py_INCREF(). Normally, we use GetItem to extract 
+data as returned by Python scripts, typically in constructors and there should not be the need to INCREF them. 
 
-If all of this sounds confusing, it is because it is. For this reason, the best course of action is not to have PyObjects loose in the C++ code. Thus, by design PyGlue hides all references to PyObjects. The public functions only deal with non PyObjects. That way, hopefully, we can keep tab on the PyObjects and avoid momery leaks and dangling pointers. However, note that Python is not completely safe from memory issue, so be careful nonetheless. 
-
+If all of this sounds confusing, it is because it is. For this reason, the best course of action is not to have PyObjects loose in the C++ code. These issues arise only of you decide to implement packing functions for specific classes. In general, you should use GetItems only in the constructor, and not hang on on the PyObject* that is the argument passed to the constructor. 
 # Error management
 
 Presumably, the user is interested in accessing the Python interpreter because Python is (a) simpler and more high-level than C++, and (b) has a huge library that covers tasks ranging from AI calculations to sending SMS and Emails. In other words, it can make life easier. On the other hand, the Python  interpreter adds another layer of possible snafus. It is therefore important to handle exceptions properly. 
@@ -62,4 +65,5 @@ advisable to continue a program after an exception has raised: you never know wh
 
 # Types
 
-The library handles the 5 basic data types (bool, int, float, double and std::string) and valarray<T> and array<T> with T (int, double, float). Functions that allow a return value only do so for the basic data types. The idea is that if a function needs to fill a data container, it should be passed as argument rather than doing a deep copy. Basic data types are always passed by value, so the const and noncost versions are the same. For containers, in the const case, we set PyBuf_READ when we create the pointer to the buffer. This will cause the program to stop if a function on the Python side will try to write to a container declared const. Unfortunately, I do not think there is a way to enforce it at the compile level. 
+The library handles the 5 basic data types (bool, int, float, double and std::string) and vector<T> with T (int, double, float). Functions that allow a return value only do so for the basic data types (so no vectors). The idea is that if a function needs to fill a data container, it should be passed as argument rather than doing a deep copy. Basic data types are always passed by value, so the const and noncost versions are the same. For containers, in the const case, we set PyBuf_READ when we create the pointer to the buffer. This will cause the program to stop if a function on the Python side will try to write to a container declared const. 
+
