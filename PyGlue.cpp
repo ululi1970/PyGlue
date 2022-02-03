@@ -1,9 +1,8 @@
 /*******************************************************************************
- *  SOMAR - Stratified Ocean Model with Adaptive Refinement
- *  Developed by Ed Santilli & Alberto Scotti
- *  Copyright (C) 2018
- *    Jefferson (Philadelphia University + Thomas Jefferson University) and
- *    University of North Carolina at Chapel Hill
+ *  PYGLUE
+ *  Developed by Alberto Scotti
+ *  Copyright (C) 2022
+ *  University of North Carolina at Chapel Hill
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
@@ -23,8 +22,7 @@
  *  For up-to-date contact information, please visit the repository homepage,
  *  https://github.com/somarhub.
  ******************************************************************************/
-#define CH_USE_PYTHON
-#ifdef CH_USE_PYTHON
+
 
 #include <Python.h>
 #include <unistd.h>
@@ -295,4 +293,4 @@ void Py::lintcatcher(int a_i, std::string name) {
   }
 }
 
-#endif
+
