@@ -1,39 +1,58 @@
 import PyGlue as pg
 import numpy as np
+
+@pg.PYGLUE
 def ValVal(v,w,s):
     
-    V = pg.ValarrayToNumpy(v)
-    W = pg.ValarrayToNumpy(w)
-    
-    V[:]=s*np.tanh(W)
-    
+
+    v[:]=s*np.tanh(w)
+
+@pg.PYGLUE
 def IntIntVal(i, j, w):
    
-    W = pg.ValarrayToNumpy(w)
-    W[4] = -12.
+    print("intint val",i,j,w.shape)
+    w[4] = -12.
 
+@pg.PYGLUE
 def retInt(j):
-    return j[0]+1    
+    return j+1    
 
+@pg.PYGLUE
 def retDouble(x):
    
-    return x[0]-.5
+    return x-.5
 
+@pg.PYGLUE
 def sumVA(X):
-    x=pg.ValarrayToNumpy(X)
-    return x.sum()
+    print(X.shape)
+    return X.sum()
 
+@pg.PYGLUE
 def CompInt(i, j):
-    return (i[0] > j[0])
-    
-def RetString(s):
-    return s[0]
+    return (i > j)
 
+@pg.PYGLUE    
+def RetString(s):
+    return s
+
+@pg.PYGLUE
 def PrintStr(s):
     print(s)
 
+@pg.PYGLUE
 def DoSomethingToV(v):
-    W = pg.ValarrayToNumpy(v)
-    W[0] = -1
     
-    
+    v[0] = -1
+
+@pg.PYGLUE    
+def printA(v):
+    print(v)
+    v.m_arr=tuple(x+2. for x in v.m_arr)
+    v.m_int=5
+    return v.toCPP()
+@pg.PYGLUE
+def printB(v):
+    print(v)
+    v.m_vect-=10
+
+

@@ -1,13 +1,16 @@
 import PyGlue as pg
+@pg.PYGLUE
 def IntBoolVal(i, b, v):
-    print(i)
-    print(b)
-    print(v)
 
+    print("an int",i)
+    print("a bool", b)
+    print("a vector", v)
+@pg.PYGLUE
 def PrintPretty(s):
-    print(s[0])
 
+    print("print pretty", s)
+@pg.PYGLUE
 def PrintStringInt(s, i):
-    print(s[0])
-    print(i[0])    
+    print("a string", s)
+    print("an int ",i)    
 
