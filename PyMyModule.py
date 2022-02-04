@@ -2,6 +2,10 @@ import PyGlue as pg
 import numpy as np
 
 @pg.PYGLUE
+def PrintTuple(v):
+    [print(item) for item in v]
+
+@pg.PYGLUE
 def MakeC(*args):
     print()
     X=np.ones(args[:-1],dtype=args[-1])

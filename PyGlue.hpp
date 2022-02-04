@@ -74,7 +74,7 @@ template <class T>
     PyTuple_SetItem(pArgs, 0, pSize);
     PyTuple_SetItem(pArgs, 1, pTypeOfT);
     PyTuple_SetItem(pArgs, 2, pView);
-    std::string label="vector";
+    std::string label="Numpy";
     PyTuple_SetItem(pArgs,3, Py::packString(label,false));
     return pArgs;
   }
@@ -90,7 +90,7 @@ template <class T>
     PyTuple_SetItem(pArgs, 0, pSize);
     PyTuple_SetItem(pArgs, 1, pTypeOfT);
     PyTuple_SetItem(pArgs, 2, pView);
-    std::string label="vector";
+    std::string label="Numpy";
     PyTuple_SetItem(pArgs,3, Py::packString(label,false));
     return pArgs;
   }
@@ -186,4 +186,5 @@ template <>
 inline PyObject *Py::pack(double&& x){
     return this->packDouble(x);
 }
+
 

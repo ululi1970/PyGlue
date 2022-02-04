@@ -105,6 +105,11 @@ since only when T is known at instantiation the argument can be evaluated by the
 template <typename T>
 struct alwaysFalse:std::false_type {};
 
+template <typename T>
+struct isNumeric {
+  static constexpr bool value=(std::is_same<T,int>::value || 
+                               std::is_same<T,float>::value || 
+                               std::is_same<T,double>::value);};
 
 class Py {
  // data members 
@@ -234,19 +239,110 @@ template <class T>
   }
 
 // partial specializations for vector-like objects. 
+// Note the different treatment for vectors. If numeric type, 
+// it is packaged to be aliased by a Numpy. 
+// Otherwise, it is meant to appear as a tuple of (Ts)
+// arrays are always appear as tuple of Ts.
+
+template <class T, size_t N>
+inline PyObject *pack(std::array<T,N> &a_v)
+{
+  PyObject* pArg=PyTuple_New(N+1);
+  int pos=0;
+  for (auto &item: a_v)
+      {
+      
+        PyTuple_SetItem(pArg,pos++,this->pack(item));
+      }
+  PyTuple_SetItem(pArg,pos, PyUnicode_FromString(std::string("tuple").c_str()));
+  return pArg;
+}
+
+template <class T, size_t N>
+inline PyObject *pack(const std::array<T,N> &a_v)
+{
+  PyObject* pArg=PyTuple_New(N+1);
+  int pos=0;
+  for (auto &item: a_v)
+      {
+        PyTuple_SetItem(pArg,pos++,this->pack(item));
+      }
+  PyTuple_SetItem(pArg,pos, PyUnicode_FromString(std::string("tuple").c_str()));
+  return pArg;
+}
+
+template <class T, size_t N>
+inline PyObject *pack(std::array<T,N> &&a_v)
+{
+  PyObject* pArg=PyTuple_New(N+1);
+  int pos=0;
+  for (auto &item: a_v)
+      {
+        PyTuple_SetItem(pArg,pos++,this->pack(item));
+      }
+      std::string label="tuple";
+  PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
+  return pArg;
+}
 
   template <class T>
   inline PyObject *pack(std::vector<T> &a_v) {
-    return this->packCont(a_v);
+    PyObject* pArg=nullptr;
+    if constexpr(isNumeric<T>::value) {
+      pArg=this->packCont(a_v);
+    }else{
+      int size=a_v.size();
+      pArg=PyTuple_New(size+1);
+      int pos=0;
+      for (auto &item: a_v)
+      {
+        PyTuple_SetItem(pArg,pos++,item.pack());
+
+      }
+       std::string label="tuple";
+    PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
+  
+    }
+    return pArg;
   }
   template <class T>
   inline PyObject *pack(const std::vector<T> &a_v) {
-    return this->packCont(a_v);
+   PyObject* pArg=nullptr;
+    if constexpr(isNumeric<T>::value) {
+      pArg=this->packCont(a_v);
+    }else{
+      int size=a_v.size();
+      pArg=PyTuple_New(size+1);
+      int pos=0;
+      for (auto &item: a_v)
+      {
+        PyTuple_SetItem(pArg,pos++,item.pack());
+      }
+       std::string label="tuple";
+       PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
+    }
+    return pArg;
   }
  template <class T>
  inline PyObject *pack(std::vector<T> &&a_v) {
-    return this->packCont(std::move(a_v));
+    PyObject* pArg=nullptr;
+    if constexpr(isNumeric<T>::value) {
+      pArg=this->packCont(std::move(a_v));
+    }else{
+      int size=a_v.size();
+      pArg=PyTuple_New(size+1);
+      int pos=0;
+      for (auto &item: a_v)
+      {
+        PyTuple_SetItem(pArg,pos++,item.pack());
+      }
+       std::string label="tuple";
+       PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
+    }
+    return pArg;
  }
+
+
   // bottom of recursion
   template <class T>
   void BuildArgsVector(T&& t); 

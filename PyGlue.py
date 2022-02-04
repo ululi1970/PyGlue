@@ -54,6 +54,9 @@ def ArrayToNumpy(v):
     arr=make_from_memView(view,[size],order='F', dtype=ArrayTypes[TypeOfObject])
     return arr
 
+def tuplifier(arg):
+    return tuple([Transmogrifiers[WhatIs(a)](a) for a in arg[:-1]])
+
 ArrayTypes = {'int': np.int32,'float': np.float32,'double': np.float64}
 
 Transmogrifiers ={
@@ -65,8 +68,10 @@ Transmogrifiers ={
                  'id' : id,
                  'A' : A,
                  'B' : B,
-                 'vector' : ArrayToNumpy
+                 'Numpy' : ArrayToNumpy,
+                 'tuple' : tuplifier
 }
+
 
 def WhatIs(arg):
     ''' Inspects arg and decide what type it is.

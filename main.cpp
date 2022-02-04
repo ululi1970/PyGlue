@@ -109,9 +109,21 @@ struct C {
 
 int main()
 {
-    A<5> newA = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
 
+    std::array<A<5>,2> tuple;
+    tuple[0] = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
+    tuple[1] = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
+    Python.PythonFunction("PyMyModule", "PrintTuple", tuple);
     B b(8);
+
+    std::array<int,6> newTuple={-1,-2,-3,-4,-5,-6};
+    std::vector<A<5>> newVec(tuple.size());
+    for (int i=0; i<2; ++i)
+    {
+        newVec[i]=tuple[i];
+    }
+    Python.PythonFunction("PyMyModule", "PrintTuple", newTuple);
+    Python.PythonFunction("PyMyModule", "PrintTuple", newVec);
     Python.PythonFunction("PyMyModule", "printB", B(8));
 
     C<2,double> c=Python.PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
