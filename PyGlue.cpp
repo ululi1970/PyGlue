@@ -23,10 +23,10 @@
  *  For up-to-date contact information, please visit the repository homepage,
  *  https://github.com/somarhub.
  ******************************************************************************/
-#define CH_USE_PYTHON
-#ifdef CH_USE_PYTHON
 
-#include <Python.h>
+
+
+
 #include <unistd.h>
 #include <sstream>
 
@@ -295,4 +295,4 @@ void Py::lintcatcher(int a_i, std::string name) {
   }
 }
 
-#endif
+

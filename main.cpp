@@ -69,6 +69,44 @@ struct B {
     
 
 };
+// a class which uses Python to allocate memory on heap. Not recommended...
+template <int dim, class T=double>
+struct C {
+    T* m_ptr;
+    array<int,dim> m_size;
+    PyObject* m_py;
+    C():m_size({0}),m_ptr(nullptr),m_py(nullptr){};
+    ~C(){
+        Py_DECREF(m_py);
+    }
+    C& operator=(const C&other){
+       if (m_py) Py_DECREF(m_py);
+       m_ptr=other.m_ptr;
+       m_size=other.m_size;
+       m_py=other.m_py;
+    }
+    C(const C& other):m_size(other.m_size),m_ptr(other.m_ptr),m_py(other.m_py){
+        Py_INCREF(m_py);
+    }
+    C(PyObject* a_pin):m_py(a_pin){
+        for (int dir=0; dir<dim; ++dir)
+        {m_size[dir]=Py::unpackInt(PyTuple_GetItem(a_pin,dir+1));
+        cout << m_size[dir] << endl;}
+        cout << PyLong_AsVoidPtr(PyTuple_GetItem(a_pin,dim+1))<< endl;
+        m_ptr=static_cast<T *>(PyLong_AsVoidPtr(PyTuple_GetItem(a_pin,dim+1)));
+        Py_INCREF(m_py);
+
+    }
+    T & operator[](const array<int, dim> iv){
+        int index=iv[0];
+        for (int dir=1; dir<dim; ++dir)
+        {
+            index+=iv[dir]*m_size[dir-1];
+            
+        }
+        return *(m_ptr+index);}
+};
+
 int main()
 {
     A<5> newA = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
@@ -76,7 +114,14 @@ int main()
     B b(8);
     Python.PythonFunction("PyMyModule", "printB", B(8));
 
-    
+    C<2,double> c=Python.PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
+    array<int,2> iv;
+    for (int j=0; j<2; ++j){
+        iv[1]=j;
+        for (int i=0; i<2; ++i)
+        {   iv[0]=i;
+            cout << i << " , " << j << "  -- " << c[iv] << endl; }
+    }
     int N = 12 * 25 * 38;
     std::vector<float> X(N);
     std::vector<float> Y(N);

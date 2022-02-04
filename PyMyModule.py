@@ -2,6 +2,13 @@ import PyGlue as pg
 import numpy as np
 
 @pg.PYGLUE
+def MakeC(*args):
+    print()
+    X=np.ones(args[:-1],dtype=args[-1])
+    print(X)
+    print(hex(X.__array_interface__['data'][0]))
+    return (X,)+args[:-1]+(X.__array_interface__['data'][0],)
+@pg.PYGLUE
 def ValVal(v,w,s):
     
 
