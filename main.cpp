@@ -34,13 +34,7 @@ struct A {
                                         // with three elements. The arguments (m_int and m_arr) and label
         PyObject* p1=Py::packInt(m_int,false); //we use packInt to pack m_int      
         PyTuple_SetItem(pArg,0,p1); // and we set it as the first element of the tuple
-        PyObject* p2=PyTuple_New(N); // since m_arr contains multiple elements, we create a tuple of the same size 
-        for(int i=0; i<N; ++i)
-        {
-            PyTuple_SetItem(p2,i,Py::packDouble(m_arr[i], false));
-            // at the end, this will be (m_arr[0],...,m_arr[N-1])
-        }
-        PyTuple_SetItem(pArg,1,p2);// and we set it as the second element
+        PyTuple_SetItem(pArg,1,Py::pack(m_arr));
         PyTuple_SetItem(pArg,2,Py::packString("A", false)); //the third contains the label "A"
         return pArg; // On the Python side, it will be (m_int, (m_arr[0],...,m_arr[N-1]), 'A' )
     }
@@ -69,7 +63,7 @@ struct B {
     
 
 };
-// a class which uses Python to allocate memory on heap. Not recommended...
+// a class which uses Python to allocate memory on heap. 
 template <int dim, class T=double>
 struct C {
     T* m_ptr;
@@ -89,11 +83,8 @@ struct C {
         Py_INCREF(m_py);
     }
     C(PyObject* a_pin):m_py(a_pin){
-        for (int dir=0; dir<dim; ++dir)
-        {m_size[dir]=Py::unpackInt(PyTuple_GetItem(a_pin,dir+1));
-        cout << m_size[dir] << endl;}
-        cout << PyLong_AsVoidPtr(PyTuple_GetItem(a_pin,dim+1))<< endl;
-        m_ptr=static_cast<T *>(PyLong_AsVoidPtr(PyTuple_GetItem(a_pin,dim+1)));
+        Py::unpack(m_size,PyTuple_GetItem(a_pin,1));
+        m_ptr=static_cast<T *>(PyLong_AsVoidPtr(PyTuple_GetItem(a_pin,2)));
         Py_INCREF(m_py);
 
     }
@@ -109,6 +100,8 @@ struct C {
 
 int main()
 {
+    std::array<int,2>(Python.PythonReturnFunction<std::array<int,2>>("PyMyModule", "returnTuple"));
+    
 
     std::array<A<5>,2> tuple;
     tuple[0] = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
@@ -127,6 +120,7 @@ int main()
     Python.PythonFunction("PyMyModule", "printB", B(8));
 
     C<2,double> c=Python.PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
+    
     array<int,2> iv;
     for (int j=0; j<2; ++j){
         iv[1]=j;

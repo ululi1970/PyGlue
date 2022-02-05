@@ -28,7 +28,6 @@
 
 #include <unistd.h>
 #include <sstream>
-
 #include "PyGlue.H"
 
 
@@ -42,6 +41,9 @@ PyObject *loadModule(std::string moduleName) {
 
   PyObject *r = PyImport_Import(pName);
   Py_DECREF(pName);
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return r;
 }
 
@@ -56,7 +58,9 @@ PyObject *loadModule(std::string moduleName) {
   std::string Label = "double";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pReal, 1, pLabel);
-  
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pReal;
   // pReal owns the object returned by PyFloat, so no need to decref that
 }
@@ -68,7 +72,9 @@ PyObject *Py::packFloat(float a_x,bool tagIt) {
   std::string Label = "double";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pReal, 1, pLabel);
-  
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pReal;
   // pReal owns the object returned by PyFloat, so no need to decref that
 }
@@ -80,7 +86,9 @@ PyObject *Py::packInt(int a_i, bool tagIt) {
   std::string Label = "int";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pInt, 1, pLabel);
-  
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pInt;
 }
 
@@ -92,7 +100,9 @@ PyObject *Py::packBool(bool a_b, bool tagIt) {
     std::string Label = "bool";
     PyObject *pLabel = PyUnicode_FromString(Label.c_str());
     PyTuple_SetItem(pBool, 1, pLabel);
-  
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pBool;
 }
 
@@ -106,22 +116,33 @@ PyObject *Py::packString(std::string s, bool tagIt) {
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pArgs, 1, pLabel);
   }
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pArgs;
 }
 
 std::string Py::unpackString(PyObject *a_pin) {
-  const char *o = PyUnicode_AsUTF8(a_pin);
 
+  const char *o = PyUnicode_AsUTF8(a_pin);
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   std::string s(o);
   return s;
+
 }
 
 bool Py::unpackBool(PyObject *a_pin) { return (a_pin == Py_True); }
 
 int Py::unpackInt(PyObject *a_pin){
 
-int x = static_cast<int>(PyLong_AsLong(a_pin));
-return x;
+  int x = static_cast<int>(PyLong_AsLong(a_pin));
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
+  return x;
+
 }
 
 
@@ -260,7 +281,9 @@ void Py::lintcatcher(int a_i) {
           "There was a problem with basinc initializion of the Python "
           "interpreter");
     case VALARRAY_TYPE_NOT_SUPPORTED:
-      MayDay::Error("valarray<type> are only for type int, float or double");
+      MayDay::Error("array<type> are only for type int, float or double");
+    case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+      MayDay::Error("Expected a different number of items in the tuple"); 
     default:
       std::cout << a_i << "\n";
       MayDay::Error("Py:lintcatcher() caught an undefined error.");
@@ -287,6 +310,8 @@ void Py::lintcatcher(int a_i, std::string name) {
     }
     case CANNOT_PACK_TYPE:
       MayDay::Error(" Cannot pack type");
+    case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+      MayDay::Error("Expected a different number of items in the tuple");
     default:
       std::cout << a_i << "\n";
       MayDay::Warning("Py::lintcatcher() caught something wrong.");

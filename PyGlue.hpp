@@ -76,6 +76,9 @@ template <class T>
     PyTuple_SetItem(pArgs, 2, pView);
     std::string label="Numpy";
     PyTuple_SetItem(pArgs,3, Py::packString(label,false));
+    if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
     return pArgs;
   }
 
@@ -92,6 +95,9 @@ template <class T>
     PyTuple_SetItem(pArgs, 2, pView);
     std::string label="Numpy";
     PyTuple_SetItem(pArgs,3, Py::packString(label,false));
+    if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
     return pArgs;
   }
 
@@ -111,80 +117,80 @@ template <class T>
 // specializations
 template <>
 inline void Py::unpack(bool &x, PyObject *a_pin){
-  x=this->unpackBool(a_pin);
+  x=Py::unpackBool(a_pin);
 }
 template <>
 inline void Py::unpack(int &x, PyObject *a_pin){
-  x=this->unpackInt(a_pin);
+  x=Py::unpackInt(a_pin);
 }
 template <>
 inline void Py::unpack(float &x, PyObject *a_pin){
-  x=this->unpackFloat(a_pin);
+  x=Py::unpackFloat(a_pin);
 }
 template <>
 inline void Py::unpack(double &x, PyObject *a_pin){
-  x=this->unpackDouble(a_pin);
+  x=Py::unpackDouble(a_pin);
 }
 template <>
 inline void Py::unpack(std::string &x, PyObject *a_pin){
-  x=this->unpackString(a_pin);
+  x=Py::unpackString(a_pin);
 }
 template <>
 inline PyObject *Py::pack(const bool &x){
-  return this->packBool(x);
+  return Py::packBool(x);
 }
 template <>
 inline PyObject *Py::pack(const int &x){
-  return this->packInt(x);
+  return Py::packInt(x);
 }
 template <>
 inline PyObject *Py::pack(const float &x){
-  return this->packFloat(x);
+  return Py::packFloat(x);
 }
 template <>
 inline PyObject *Py::pack(const double &x){
-  return this->packDouble(x);
+  return Py::packDouble(x);
 }
 template <>
 inline PyObject *Py::pack(const std::string &x){
-  return this->packString(x);
+  return Py::packString(x);
 }
 template <>
 inline PyObject *Py::pack(bool &x){
-  return this->packBool(x);
+  return Py::packBool(x);
 }
 template <>
 inline PyObject *Py::pack(int &x){
-  return this->packInt(x);
+  return Py::packInt(x);
 }
 template <>
 inline PyObject *Py::pack(float &x){
-  return this->packFloat(x);
+  return Py::packFloat(x);
 }
 template <>
 inline PyObject *Py::pack(double &x){
-  return this->packDouble(x);
+  return Py::packDouble(x);
 }
 template <>
 inline PyObject *Py::pack(std::string &x){
-  return this->packString(x);
+  return Py::packString(x);
 }
 template <>
 inline PyObject *Py::pack(const char* x){
     const std::string s(x);
-    return this->packString(s);
+    return Py::packString(s);
 }
 template <>
 inline PyObject *Py::pack(int&& x){
-    return this->packInt(x);
+    return Py::packInt(x);
 }
 template <>
 inline PyObject *Py::pack(float&& x){
-    return this->packFloat(x);
+    return Py::packFloat(x);
 }
 template <>
 inline PyObject *Py::pack(double&& x){
-    return this->packDouble(x);
+    return Py::packDouble(x);
 }
 
 

@@ -6,12 +6,17 @@ def PrintTuple(v):
     [print(item) for item in v]
 
 @pg.PYGLUE
+def returnTuple():
+    return (1,2)
+
+@pg.PYGLUE
 def MakeC(*args):
-    print()
+    print(args)
     X=np.ones(args[:-1],dtype=args[-1])
     print(X)
     print(hex(X.__array_interface__['data'][0]))
-    return (X,)+args[:-1]+(X.__array_interface__['data'][0],)
+    out = (X,)+(tuple(args[:-1]),)+(X.__array_interface__['data'][0],)
+    return out
 @pg.PYGLUE
 def ValVal(v,w,s):
     

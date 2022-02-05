@@ -171,31 +171,7 @@ static  PyObject *packCont(T &a_v);
 template <class T>
 static  PyObject *packCont(const T &a_v); 
 
-private:
-  void runVoidFunction(std::string Module, std::string function,
-                       std::vector<PyObject *> arg);
-  PyObject *runFunction(std::string Module, std::string function,
-                        std::vector<PyObject *> arg);
-
-  enum {
-    MULTIPLE_INSTANCES_DETECTED = 0,
-    MODULE_NOT_FOUND,
-    FUNCTION_NOT_FOUND,
-    WRONG_NUMBER_OF_ARGUMENTS,
-    VALARRAY_TYPE_NOT_SUPPORTED,
-    CANNOT_PACK_TYPE,
-    CANNOT_UNPACK_TYPE,
-    CANNOT_START_INTERPRETER,
-    INTERPRETER_CANNOT_BE_INITIALIZED
-  };  // stores labels for error and warning messages
-
-  // handlers for exceptions
-  static void lintcatcher(int a_i);
-  static void lintcatcher(int a_i, std::string toOutput);
-
-  
-
-  // overloaded function to create the Python pointer for their arguments
+// overloaded function to create the Python pointer for their arguments
 
   // used to set a str of the correspoding type, to be used to specify what type
   // of numpy should be attached to the valarray
@@ -211,13 +187,24 @@ private:
 
   // basic packing and unpacking template for objects that are are passed by
   // reference
+
   template <class T>
-  inline void unpack(T &t, PyObject *a_pin) {
+  static inline void unpack(T &t, PyObject *a_pin) {
     t = T(a_pin);  
   }
 
+template <class T, size_t N>
+static inline void unpack(std::array<T,N> &t, PyObject *a_pin){
+  if (PyTuple_Size(a_pin)!=N) 
+    Py::lintcatcher(TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
+  for (int i=0; i<N; ++i)   
+      Py::unpack(t[i], PyTuple_GetItem(a_pin,i));
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
+}
   template <class T>
-  inline PyObject *pack(const T*t ){
+ static  inline PyObject *pack(const T*t ){
    static_assert(alwaysFalse<T>::value, "You have reached the bottom of the recursion with a pointer which is not \
     a cont char *. If you know what you are doing, comment out the static_assert and recompile. \
     But be advised that this can be dangerous.");
@@ -225,7 +212,7 @@ private:
     
   }
 template <class T>
-  inline PyObject *pack(T *t ){
+ static inline PyObject *pack(T *t ){
     static_assert(alwaysFalse<T>::value, "You have reached the bottom of the recursion with a pointer which is not \
     a char *. If you know what you are doing, comment out the static_assert and recompile. \
     But be advised that this can be dangerous.");
@@ -233,8 +220,8 @@ template <class T>
     
   }
   
-  template <class T>
-  inline PyObject* pack(T&& t){
+ template <class T>
+ static inline PyObject* pack(T&& t){
     return t.pack();
   }
 
@@ -245,51 +232,60 @@ template <class T>
 // arrays are always appear as tuple of Ts.
 
 template <class T, size_t N>
-inline PyObject *pack(std::array<T,N> &a_v)
+static inline PyObject *pack(std::array<T,N> &a_v)
 {
   PyObject* pArg=PyTuple_New(N+1);
   int pos=0;
   for (auto &item: a_v)
       {
       
-        PyTuple_SetItem(pArg,pos++,this->pack(item));
+        PyTuple_SetItem(pArg,pos++,Py::pack(item));
       }
   PyTuple_SetItem(pArg,pos, PyUnicode_FromString(std::string("tuple").c_str()));
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pArg;
 }
 
 template <class T, size_t N>
-inline PyObject *pack(const std::array<T,N> &a_v)
+static inline PyObject *pack(const std::array<T,N> &a_v)
 {
   PyObject* pArg=PyTuple_New(N+1);
   int pos=0;
   for (auto &item: a_v)
       {
-        PyTuple_SetItem(pArg,pos++,this->pack(item));
+        PyTuple_SetItem(pArg,pos++,Py::pack(item));
       }
   PyTuple_SetItem(pArg,pos, PyUnicode_FromString(std::string("tuple").c_str()));
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pArg;
 }
 
 template <class T, size_t N>
-inline PyObject *pack(std::array<T,N> &&a_v)
+static inline PyObject *pack(std::array<T,N> &&a_v)
 {
   PyObject* pArg=PyTuple_New(N+1);
   int pos=0;
   for (auto &item: a_v)
       {
-        PyTuple_SetItem(pArg,pos++,this->pack(item));
+        PyTuple_SetItem(pArg,pos++,Py::pack(item));
       }
       std::string label="tuple";
   PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
+  if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
   return pArg;
 }
 
   template <class T>
-  inline PyObject *pack(std::vector<T> &a_v) {
+static  inline PyObject *pack(std::vector<T> &a_v) {
     PyObject* pArg=nullptr;
     if constexpr(isNumeric<T>::value) {
-      pArg=this->packCont(a_v);
+      pArg=Py::packCont(a_v);
     }else{
       int size=a_v.size();
       pArg=PyTuple_New(size+1);
@@ -303,13 +299,16 @@ inline PyObject *pack(std::array<T,N> &&a_v)
     PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
   
     }
+    if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
     return pArg;
   }
   template <class T>
-  inline PyObject *pack(const std::vector<T> &a_v) {
+static  inline PyObject *pack(const std::vector<T> &a_v) {
    PyObject* pArg=nullptr;
     if constexpr(isNumeric<T>::value) {
-      pArg=this->packCont(a_v);
+      pArg=Py::packCont(a_v);
     }else{
       int size=a_v.size();
       pArg=PyTuple_New(size+1);
@@ -321,13 +320,16 @@ inline PyObject *pack(std::array<T,N> &&a_v)
        std::string label="tuple";
        PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
     }
+    if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
     return pArg;
   }
- template <class T>
- inline PyObject *pack(std::vector<T> &&a_v) {
+template <class T>
+static inline PyObject *pack(std::vector<T> &&a_v) {
     PyObject* pArg=nullptr;
     if constexpr(isNumeric<T>::value) {
-      pArg=this->packCont(std::move(a_v));
+      pArg=Py::packCont(std::move(a_v));
     }else{
       int size=a_v.size();
       pArg=PyTuple_New(size+1);
@@ -339,8 +341,37 @@ inline PyObject *pack(std::array<T,N> &&a_v)
        std::string label="tuple";
        PyTuple_SetItem(pArg,pos, PyUnicode_FromString(label.c_str()));
     }
+    if (PyErr_Occurred()) {
+    PyErr_Print();
+  }
     return pArg;
  }
+private:
+  void runVoidFunction(std::string Module, std::string function,
+                       std::vector<PyObject *> arg);
+  PyObject *runFunction(std::string Module, std::string function,
+                        std::vector<PyObject *> arg);
+
+  enum {
+    MULTIPLE_INSTANCES_DETECTED = 0,
+    MODULE_NOT_FOUND,
+    FUNCTION_NOT_FOUND,
+    WRONG_NUMBER_OF_ARGUMENTS,
+    VALARRAY_TYPE_NOT_SUPPORTED,
+    CANNOT_PACK_TYPE,
+    CANNOT_UNPACK_TYPE,
+    CANNOT_START_INTERPRETER,
+    INTERPRETER_CANNOT_BE_INITIALIZED,
+    TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS
+  };  // stores labels for error and warning messages
+
+  // handlers for exceptions
+  static void lintcatcher(int a_i);
+  static void lintcatcher(int a_i, std::string toOutput);
+
+  
+
+  
 
 
   // bottom of recursion

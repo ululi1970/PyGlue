@@ -7,7 +7,7 @@ class A:
         if Arg[-1]!= "A":
             raise ValueError("A constructor called with wrong Arg")
         self.m_int=Arg[0] # first element of the incoming tuple is a single integer
-        self.m_arr=Arg[1] # the second element contains the tuple in vec
+        self.m_arr=tuplifier(Arg[1]) # the second element contains the tuple in vec
     def __str__(self):
         string = "Class A \n"
         string+= "m_int = " + str(self.m_int) + "\n"
