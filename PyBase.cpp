@@ -28,8 +28,16 @@
 #include <iostream>
 #include "PyBase.H"
 
+std::map<std::string, PyObject *> PyBase::m_Module_map;
+const std::vector<std::string> PyBase::DefaultInitCommands{"import os",
+                                                           "import sys",
+                                                           "sys.argv=['']",
+                                                           "import site",
+                                                           "sys.path.append('.')",
+                                                           "sys.path.insert(0, site.USER_SITE)"};
+
 // imports moduleName into the interpreter
-PyObject *PyBase::loadModule(std::string moduleName) const
+PyObject *PyBase::loadModule(std::string moduleName)
 {
   PyObject *pName = PyUnicode_DecodeFSDefault(moduleName.c_str());
   // std::cerr << moduleName.c_str() << "\n";
@@ -177,43 +185,33 @@ double PyBase::unpackDouble(PyObject *a_pin)
   return x;
 }
 
-PyBase::PyBase()
+void PyBase::start(std::vector<std::string> initCommands)
 {
   if (Py_IsInitialized())
-  {
-    this->lintcatcher(MULTIPLE_INSTANCES_DETECTED);
-  }
+    return;
+
   Py_Initialize();
   if (!Py_IsInitialized())
   {
-    this->lintcatcher(CANNOT_START_INTERPRETER);
+    lintcatcher(CANNOT_START_INTERPRETER);
   }
-  // the purpose of this block is to
-  // configure the python interpreter
-
-  PyRun_SimpleString("import os");
-  PyRun_SimpleString("import sys");
-  PyRun_SimpleString("sys.argv=['']");
-  PyRun_SimpleString("import site");
-  PyRun_SimpleString("sys.path.append('.')");
-  PyRun_SimpleString("sys.path.append('../PythonScripts')");
-  PyRun_SimpleString("sys.path.insert(0, site.USER_SITE)");
+  // run the commands provided in initCommands
+  for (auto &i : initCommands)
+  {
+    PyRun_SimpleString(i.c_str());
+  }
 
   if (PyErr_Occurred())
   {
     PyErr_Print();
-    this->lintcatcher(INTERPRETER_CANNOT_BE_INITIALIZED);
+    lintcatcher(Errors::INTERPRETER_CANNOT_BE_INITIALIZED);
   }
 }
 
-PyBase::~PyBase()
+void PyBase::stop()
 {
-  for (auto itr = m_Module_map.begin(); itr != m_Module_map.end(); ++itr)
-  {
-    Py_DECREF(itr->second);
-  }
-  m_Module_map.clear();
   Py_Finalize();
+  m_Module_map.clear();
 }
 
 PyObject *PyBase::ImportAndGetModule(std::string ModuleName)
@@ -223,7 +221,7 @@ PyObject *PyBase::ImportAndGetModule(std::string ModuleName)
     return m_Module_map[ModuleName];
   }
 
-  PyObject *pModule = this->loadModule(ModuleName);
+  PyObject *pModule = loadModule(ModuleName);
   if (pModule != nullptr)
   {
     m_Module_map.insert(
@@ -233,15 +231,15 @@ PyObject *PyBase::ImportAndGetModule(std::string ModuleName)
   else
   {
     PyErr_Print();
-    this->lintcatcher(MODULE_NOT_FOUND, ModuleName);
+    lintcatcher(MODULE_NOT_FOUND, ModuleName);
 
-    Py_RETURN_NONE;
+    return static_cast<PyObject *>(nullptr);
   }
 }
 
 bool PyBase::isFuncDefined(std::string Module, std::string function)
 {
-  PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module),
+  PyObject *pFunc = PyObject_GetAttrString(ImportAndGetModule(Module),
                                            function.c_str());
   if (pFunc && PyCallable_Check(pFunc))
   {
@@ -258,7 +256,9 @@ bool PyBase::isFuncDefined(std::string Module, std::string function)
 PyObject *PyBase::runFunction(std::string Module, std::string FuncName,
                               std::vector<PyObject *> Arg)
 {
-  PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module),
+  if (!Py_IsInitialized())
+    lintcatcher(Errors::INTERPRETER_NEEDS_TO_BE_INITIALIZED);
+  PyObject *pFunc = PyObject_GetAttrString(ImportAndGetModule(Module),
                                            FuncName.c_str());
   if (pFunc && PyCallable_Check(pFunc))
   { // it's a go, function exists
@@ -274,7 +274,7 @@ PyObject *PyBase::runFunction(std::string Module, std::string FuncName,
       PyErr_Print();
       std::string o;
       o = Module + "." + FuncName;
-      this->lintcatcher(WRONG_NUMBER_OF_ARGUMENTS, o);
+      lintcatcher(Errors::WRONG_NUMBER_OF_ARGUMENTS, o);
     }
     Py_DECREF(pArgs);
     Py_DECREF(pFunc);
@@ -285,23 +285,32 @@ PyObject *PyBase::runFunction(std::string Module, std::string FuncName,
   {
     if (PyErr_Occurred())
       PyErr_Print();
+
     std::string o;
     o = Module + "." + FuncName;
-    this->lintcatcher(FUNCTION_NOT_FOUND, o);
+    lintcatcher(Errors::FUNCTION_NOT_FOUND, o);
+
     return static_cast<PyObject *>(nullptr);
   }
 }
 void PyBase::runVoidFunction(std::string Module, std::string FuncName,
                              std::vector<PyObject *> Arg)
 {
-  PyObject *r = this->runFunction(Module, FuncName, Arg);
-  Py_XDECREF(r);
+  if (Py_IsInitialized())
+  {
+    PyObject *r = runFunction(Module, FuncName, Arg);
+    Py_XDECREF(r);
+  }
+  else
+  {
+    lintcatcher(Errors::INTERPRETER_NEEDS_TO_BE_INITIALIZED);
+  }
 }
 void PyBase::lintcatcher(int a_i)
 {
   switch (a_i)
   {
-  case MULTIPLE_INSTANCES_DETECTED:
+  case Errors::MULTIPLE_INSTANCES_DETECTED:
   {
     std::string o;
     o = "Multiple instances detected. Py is meant to be instantiated only "
@@ -312,16 +321,18 @@ void PyBase::lintcatcher(int a_i)
         "wrapper.";
     MayDay::Error(o.c_str());
   }
-  case CANNOT_START_INTERPRETER:
+  case Errors::CANNOT_START_INTERPRETER:
     MayDay::Error("There was a problem starting the Python interpreter");
-  case INTERPRETER_CANNOT_BE_INITIALIZED:
+  case Errors::INTERPRETER_CANNOT_BE_INITIALIZED:
     MayDay::Error(
         "There was a problem with basinc initializion of the Python "
         "interpreter");
-  case VALARRAY_TYPE_NOT_SUPPORTED:
+  case Errors::VALARRAY_TYPE_NOT_SUPPORTED:
     MayDay::Error("array<type> are only for type int, float or double");
-  case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+  case Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
     MayDay::Error("Expected a different number of items in the tuple");
+  case Errors::INTERPRETER_NEEDS_TO_BE_INITIALIZED:
+    MayDay::Error("Python Script Invoked before running Py::start()");
   default:
     std::cout << a_i << "\n";
     MayDay::Error("Py:lintcatcher() caught an undefined error.");
@@ -331,29 +342,29 @@ void PyBase::lintcatcher(int a_i, std::string name)
 {
   switch (a_i)
   {
-  case MODULE_NOT_FOUND:
+  case Errors::MODULE_NOT_FOUND:
   {
     std::string o;
     o = " Cannot find module " + name + ".";
     MayDay::Error(o.c_str());
   }
-  case FUNCTION_NOT_FOUND:
+  case Errors::FUNCTION_NOT_FOUND:
   {
     std::string o;
     o = " Cannot find function " + name;
     MayDay::Error(o.c_str());
   }
-  case WRONG_NUMBER_OF_ARGUMENTS:
+  case Errors::WRONG_NUMBER_OF_ARGUMENTS:
   {
     std::string o;
     o = "The function " + name +
         " encountered and error: wrong number/type of arguments?";
-    std::exit(0);
+
     MayDay::Error(o.c_str());
   }
-  case CANNOT_PACK_TYPE:
+  case Errors::CANNOT_PACK_TYPE:
     MayDay::Error(" Cannot pack type");
-  case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+  case Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
     MayDay::Error("Expected a different number of items in the tuple");
   default:
     std::cout << a_i << "\n";

@@ -1,7 +1,7 @@
 # PyGlue
-A simple C++ library to pass variables, run code and retrieve data on a Python interpreter from within a C++ code.
-See the header file and the file main.cpp for examples of use. 
-This class relies on C++14 features.   
+A C++ library to pass variables, run code and retrieve data on a Python interpreter from within a C++ code.
+See the header files and the file main.cpp for examples of use. 
+This class relies on C++17 features.   
 At the moment, the following types can be passed as arguments and retrieved as return value from function: std::string, int, bool, float and double. array<T> are passed in such a way that a numoy can be aliased to them on the Python side.   For all types, both const and non const and rvalues arguments are supported. However, note that regardless, the symple types (boo, int,..) are always passed by value. If a return value is needed, it can be obtained as a return value.  What this means is that a pointer to the buffer is passed to Python, which thus gives access to the data store. In case the variable is flagged as const, the corresponding numpy is flagged as read_ony. Attemp to write to it will cause the program to stop. A generic class can be passed (by reference) if it implements a PyObject* T::pack() that creates the appropriate data structure (see main.cpp for examples). Likewise, a class T that has a copy constructor and an assignment constructor can be created from data generated in Python if it implements
 a constructor that acepts a PyObject* as argument.  
 
@@ -20,14 +20,15 @@ Note that we did not have to do anything to spam to run it. The decorator takes 
 On the C++ side, 
 ```c++
     {....
-    Py Python; 
+    Py::start(); //To be called before the first Python(Return)Function() call
     vector<double> X,Y,Z; 
     int M,N;
     double A;
     ... // init/create the variables as needed
 
-    Python.PythonFunction("ham","spam",X,Y,Z,M,N,A);
+    Py::PythonFunction("ham","spam",X,Y,Z,M,N,A);
 
+    Py::stop(); //To be called after all calls to Python(Return)Function()
     ... // Do something with Z
 
     }
@@ -41,7 +42,9 @@ see main.cpp.
 
 # Design considerations
 
-The general philosophy is that data that lives on stack is passed by copy, whereas data that lives on heap is passed by reference. In general, it is a good idea to limit data allocation on heap 
+The class is purely static and not thread safe. However, this is not a problem since the GIL of the Python interpreter means that only one thread at a time can run scripts. Py::start(InitCommands) must be 
+called before any other calls. The Commands argument is a vector of std::string that contains instructions to configure the interpreter. If not provided, a set of dafults commands is run (defined in PyBase::DefaultInitCommands). To close the intepreter, call Py::stop().   
+The general philosophy for data handling is that data that lives on stack is passed by copy, whereas data that lives on heap is passed by reference. The exception is std::vector<T>, with T not a numeric type (POD). In this case, a copy is made of each element of the vector.  In general, it is a good idea to limit data allocation on heap 
 to the C++ side and alias to it an appropriate object in Python. However, with care, it is also possible to allocate data on heap on the Python side, and alias a C++ object. The tricky part in this case, discussed below, is to ensure that the Python garbage collector does not release the memory before C++ is done with it.    
 
 # Memory management

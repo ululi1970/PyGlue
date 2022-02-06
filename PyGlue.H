@@ -115,7 +115,7 @@ class Py : public PyBase
 
   // public interface
 public:
-  Py(){};          // Constructor. All the work is actually done in the base class
+  Py()=delete;    // This is a static class
   virtual ~Py(){}; // ditto for destructor.
 
   Py(const Py &) = delete;
@@ -124,10 +124,10 @@ public:
   // these are the functions that the user calls to execute Module.function with
   // the arguments provided
   template <class... Ts>
-  void PythonFunction(std::string Module, std::string function, Ts &&...ts);
+  static void PythonFunction(std::string Module, std::string function, Ts &&...ts);
 
   template <class T, class... Ts>
-  T PythonReturnFunction(std::string Module, std::string function, Ts &&...ts);
+  static T PythonReturnFunction(std::string Module, std::string function, Ts &&...ts);
 
   // these are specializations used for classes that have a vector-like structure (.size() and iterators)
   template <class T>

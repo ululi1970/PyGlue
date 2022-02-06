@@ -6,8 +6,7 @@
 using namespace std;
 
 
-Py Python; //note the global definition of Python
-// there should only be one instance of this class.
+
 
 //example of class which is assignable
 template<int N>
@@ -100,14 +99,19 @@ struct C {
 
 int main()
 {
-    Python.PythonFunction("PyMyModule", "noArgs");
-    std::array<int,2>(Python.PythonReturnFunction<std::array<int,2>>("PyMyModule", "returnTuple"));
+   
+    auto InitCommands=Py::DefaultInitCommands;
+    InitCommands.push_back("print(sys.path)");
+    Py::start(InitCommands);
+    
+    Py::PythonFunction("PyMyModule", "noArgs");
+    std::array<int,2>(Py::PythonReturnFunction<std::array<int,2>>("PyMyModule", "returnTuple"));
     
 
     std::array<A<5>,2> tuple;
-    tuple[0] = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
-    tuple[1] = Python.PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
-    Python.PythonFunction("PyMyModule", "PrintTuple", tuple);
+    tuple[0] = Py::PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
+    tuple[1] = Py::PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
+    Py::PythonFunction("PyMyModule", "PrintTuple", tuple);
     B b(8);
 
     std::array<int,6> newTuple={-1,-2,-3,-4,-5,-6};
@@ -116,11 +120,11 @@ int main()
     {
         newVec[i]=tuple[i];
     }
-    Python.PythonFunction("PyMyModule", "PrintTuple", newTuple);
-    Python.PythonFunction("PyMyModule", "PrintTuple", newVec);
-    Python.PythonFunction("PyMyModule", "printB", B(8));
+    Py::PythonFunction("PyMyModule", "PrintTuple", newTuple);
+    Py::PythonFunction("PyMyModule", "PrintTuple", newVec);
+    Py::PythonFunction("PyMyModule", "printB", B(8));
 
-    C<2,double> c=Python.PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
+    C<2,double> c=Py::PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
     
     array<int,2> iv;
     for (int j=0; j<2; ++j){
@@ -177,22 +181,22 @@ int main()
 
     const vector<float> &XX = X;
 
-    Python.PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
-    Python.PythonFunction("PyMyModule", "ValVal", XI, YI,s);
-    Python.PythonFunction("PyMyModule", "ValVal", X, Y,s);
+    Py::PythonFunction("PyMyModule", "IntIntVal", i, j, X); // preload module for fairness
+    Py::PythonFunction("PyMyModule", "ValVal", XI, YI,s);
+    Py::PythonFunction("PyMyModule", "ValVal", X, Y,s);
     
-    Python.PythonFunction("PyMyModule", "IntIntVal",i,j, AI);
+    Py::PythonFunction("PyMyModule", "IntIntVal",i,j, AI);
 
     std::string o = "hello world";
-    Python.PythonFunction("PyAnotherModule", "PrintStringInt", o, l);
-    Python.PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);
+    Py::PythonFunction("PyAnotherModule", "PrintStringInt", o, l);
+    Py::PythonFunction("PyAnotherModule", "IntBoolVal", i, F, Y);
 
-    int ip1 = Python.PythonReturnFunction<int>("PyMyModule", "retInt", j);
+    int ip1 = Py::PythonReturnFunction<int>("PyMyModule", "retInt", j);
     double yy=1.0;
-    double xx = Python.PythonReturnFunction<double>("PyMyModule", "retDouble", yy);
+    double xx = Py::PythonReturnFunction<double>("PyMyModule", "retDouble", yy);
     cout << ip1 << " = " << j+1 << endl;
     cout << xx << " = " << yy-0.5 << endl;
-    xx=Python.PythonReturnFunction<double>("PyMyModule","sumVA",Y);
+    xx=Py::PythonReturnFunction<double>("PyMyModule","sumVA",Y);
     float sum=0.;
     for (auto &x: Y)
     {
@@ -200,18 +204,21 @@ int main()
     }
     cout << xx << " = " << sum << endl;
     
-    T=Python.PythonReturnFunction<bool>("PyMyModule", "CompInt", i, j);
+    T=Py::PythonReturnFunction<bool>("PyMyModule", "CompInt", i, j);
     cout << "Is " <<  i  << " > " << j << "? " << T << endl;
 
     std::string stringa = "Hello!";
-    Python.PythonFunction("PyMyModule", "PrintStr", stringa);
-    std::string sb = Python.PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
-    Python.PythonFunction("PyMyModule", "PrintStr", sb);
+    Py::PythonFunction("PyMyModule", "PrintStr", stringa);
+    std::string sb = Py::PythonReturnFunction<std::string>("PyMyModule", "RetString", stringa);
+    Py::PythonFunction("PyMyModule", "PrintStr", sb);
 
-    if (!Python.isFuncDefined("PyAnotherModule", "oops"))
+    if (!Py::isFuncDefined("PyAnotherModule", "oops"))
     {
         cout << "The following call will try to run a function that does not exist" << endl;
-        Python.PythonFunction("PyAnotherModule", "oops", i, F, Y);
+        Py::PythonFunction("PyAnotherModule", "oops", i, F, Y);
     }
+
+    std::cout << "Ending program" << std::endl;
+    Py::stop();
     return 0;
 };

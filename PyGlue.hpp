@@ -7,7 +7,7 @@ void Py::PythonFunction(std::string Module, std::string function, Ts &&...ts)
   std::vector<PyObject *> args;
   if constexpr (sizeof...(ts) != 0)
     Py::BuildArgsVector(args, std::forward<Ts>(ts)...); // std::forward preserves the nature of the args
-  this->runVoidFunction(Module, function, args);
+  runVoidFunction(Module, function, args);
 }
 //
 template <class T, class... Ts>
@@ -16,7 +16,7 @@ T Py::PythonReturnFunction(std::string Module, std::string function, Ts &&...ts)
   std::vector<PyObject *> args;
   if constexpr (sizeof...(ts) != 0)
     Py::BuildArgsVector(args, std::forward<Ts>(ts)...);
-  PyObject *return_value = this->runFunction(Module, function, args);
+  PyObject *return_value = runFunction(Module, function, args);
   T t;
   Py::unpack(t, return_value);
   Py_DECREF(return_value);
