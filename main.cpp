@@ -100,6 +100,7 @@ struct C {
 
 int main()
 {
+    Python.PythonFunction("PyMyModule", "noArgs");
     std::array<int,2>(Python.PythonReturnFunction<std::array<int,2>>("PyMyModule", "returnTuple"));
     
 

@@ -2,6 +2,10 @@ import PyGlue as pg
 import numpy as np
 
 @pg.PYGLUE
+def noArgs():
+    pass
+
+@pg.PYGLUE
 def PrintTuple(v):
     [print(item) for item in v]
 

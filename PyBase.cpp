@@ -23,158 +23,174 @@
  *  https://github.com/somarhub.
  ******************************************************************************/
 
-
-
-
 #include <unistd.h>
 #include <sstream>
-#include "PyGlue.H"
-
-
-
-#define addCompName(X) compNames[statePtr->X] = #X;
+#include <iostream>
+#include "PyBase.H"
 
 // imports moduleName into the interpreter
-PyObject *loadModule(std::string moduleName) {
+PyObject *PyBase::loadModule(std::string moduleName) const
+{
   PyObject *pName = PyUnicode_DecodeFSDefault(moduleName.c_str());
   // std::cerr << moduleName.c_str() << "\n";
 
   PyObject *r = PyImport_Import(pName);
   Py_DECREF(pName);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return r;
 }
 
-
 // returns a pointer to a Python tuple containing a real
 
-  PyObject *Py::packDouble(double a_x, bool tagIt) {
-  if(!tagIt) return PyFloat_FromDouble(double(a_x));
+PyObject *PyBase::packDouble(double a_x, bool tagIt)
+{
+  if (!tagIt)
+    return PyFloat_FromDouble(double(a_x));
   PyObject *pReal = PyTuple_New(2);
   PyTuple_SetItem(pReal, 0, PyFloat_FromDouble(double(a_x)));
-  
+
   std::string Label = "double";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pReal, 1, pLabel);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return pReal;
   // pReal owns the object returned by PyFloat, so no need to decref that
 }
 
-PyObject *Py::packFloat(float a_x,bool tagIt) {
-  if(!tagIt) return PyFloat_FromDouble(double(a_x));
+PyObject *PyBase::packFloat(float a_x, bool tagIt)
+{
+  if (!tagIt)
+    return PyFloat_FromDouble(double(a_x));
   PyObject *pReal = PyTuple_New(2);
   PyTuple_SetItem(pReal, 0, PyFloat_FromDouble(double(a_x)));
   std::string Label = "double";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pReal, 1, pLabel);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return pReal;
   // pReal owns the object returned by PyFloat, so no need to decref that
 }
-PyObject *Py::packInt(int a_i, bool tagIt) {
-  if(!tagIt) return PyLong_FromLong(a_i);
+PyObject *PyBase::packInt(int a_i, bool tagIt)
+{
+  if (!tagIt)
+    return PyLong_FromLong(a_i);
   PyObject *pInt = PyTuple_New(2);
   PyTuple_SetItem(pInt, 0, PyLong_FromLong(a_i));
-  
+
   std::string Label = "int";
   PyObject *pLabel = PyUnicode_FromString(Label.c_str());
   PyTuple_SetItem(pInt, 1, pLabel);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return pInt;
 }
 
-PyObject *Py::packBool(bool a_b, bool tagIt) {
-  if(!tagIt) return PyBool_FromLong(int(a_b));
+PyObject *PyBase::packBool(bool a_b, bool tagIt)
+{
+  if (!tagIt)
+    return PyBool_FromLong(int(a_b));
   PyObject *pBool = PyTuple_New(2);
   PyTuple_SetItem(pBool, 0, PyBool_FromLong(int(a_b)));
-  
-    std::string Label = "bool";
-    PyObject *pLabel = PyUnicode_FromString(Label.c_str());
-    PyTuple_SetItem(pBool, 1, pLabel);
-  if (PyErr_Occurred()) {
+
+  std::string Label = "bool";
+  PyObject *pLabel = PyUnicode_FromString(Label.c_str());
+  PyTuple_SetItem(pBool, 1, pLabel);
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return pBool;
 }
 
-PyObject *Py::packString(std::string s, bool tagIt) {
-  if(!tagIt) return PyUnicode_FromString(s.c_str());
+PyObject *PyBase::packString(std::string s, bool tagIt)
+{
+  if (!tagIt)
+    return PyUnicode_FromString(s.c_str());
   PyObject *pArgs = PyTuple_New(2);
   PyObject *pStr = PyUnicode_FromString(s.c_str());
   PyTuple_SetItem(pArgs, 0, pStr);
   {
-  std::string Label = "str";
-  PyObject *pLabel = PyUnicode_FromString(Label.c_str());
-  PyTuple_SetItem(pArgs, 1, pLabel);
+    std::string Label = "str";
+    PyObject *pLabel = PyUnicode_FromString(Label.c_str());
+    PyTuple_SetItem(pArgs, 1, pLabel);
   }
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return pArgs;
 }
 
-std::string Py::unpackString(PyObject *a_pin) {
+std::string PyBase::unpackString(PyObject *a_pin)
+{
 
   const char *o = PyUnicode_AsUTF8(a_pin);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   std::string s(o);
   return s;
-
 }
 
-bool Py::unpackBool(PyObject *a_pin) { return (a_pin == Py_True); }
+bool PyBase::unpackBool(PyObject *a_pin) { return (a_pin == Py_True); }
 
-int Py::unpackInt(PyObject *a_pin){
+int PyBase::unpackInt(PyObject *a_pin)
+{
 
   int x = static_cast<int>(PyLong_AsLong(a_pin));
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return x;
-
 }
 
-
-float Py::unpackFloat(PyObject *a_pin) {
+float PyBase::unpackFloat(PyObject *a_pin)
+{
   float x = static_cast<float>(PyFloat_AsDouble(a_pin));
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return x;
 }
 
-double Py::unpackDouble(PyObject *a_pin) {
+double PyBase::unpackDouble(PyObject *a_pin)
+{
   double x = PyFloat_AsDouble(a_pin);
-  if (PyErr_Occurred()) {
+  if (PyErr_Occurred())
+  {
     PyErr_Print();
   }
   return x;
 }
 
-
-
-Py::Py() {
-  if (Py_IsInitialized()) {
+PyBase::PyBase()
+{
+  if (Py_IsInitialized())
+  {
     this->lintcatcher(MULTIPLE_INSTANCES_DETECTED);
   }
   Py_Initialize();
-  if (!Py_IsInitialized()) {
+  if (!Py_IsInitialized())
+  {
     this->lintcatcher(CANNOT_START_INTERPRETER);
   }
-  // the purpose of this block is to 
+  // the purpose of this block is to
   // configure the python interpreter
-  
+
   PyRun_SimpleString("import os");
   PyRun_SimpleString("import sys");
   PyRun_SimpleString("sys.argv=['']");
@@ -190,25 +206,32 @@ Py::Py() {
   }
 }
 
-Py::~Py() {
-  for (auto itr = m_Module_map.begin(); itr != m_Module_map.end(); ++itr) {
+PyBase::~PyBase()
+{
+  for (auto itr = m_Module_map.begin(); itr != m_Module_map.end(); ++itr)
+  {
     Py_DECREF(itr->second);
   }
   m_Module_map.clear();
   Py_Finalize();
 }
 
-PyObject *Py::ImportAndGetModule(std::string ModuleName) {
-  if (m_Module_map.count(ModuleName) > 0) {
+PyObject *PyBase::ImportAndGetModule(std::string ModuleName)
+{
+  if (m_Module_map.count(ModuleName) > 0)
+  {
     return m_Module_map[ModuleName];
   }
 
-  PyObject *pModule = loadModule(ModuleName);
-  if (pModule != nullptr) {
+  PyObject *pModule = this->loadModule(ModuleName);
+  if (pModule != nullptr)
+  {
     m_Module_map.insert(
         std::pair<std::string, PyObject *>(ModuleName, pModule));
     return pModule;
-  } else {
+  }
+  else
+  {
     PyErr_Print();
     this->lintcatcher(MODULE_NOT_FOUND, ModuleName);
 
@@ -216,30 +239,38 @@ PyObject *Py::ImportAndGetModule(std::string ModuleName) {
   }
 }
 
-bool Py::isFuncDefined(std::string Module, std::string function) {
+bool PyBase::isFuncDefined(std::string Module, std::string function)
+{
   PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module),
                                            function.c_str());
-  if (pFunc && PyCallable_Check(pFunc)) {
+  if (pFunc && PyCallable_Check(pFunc))
+  {
     Py_DECREF(pFunc);
     return true;
-  } else {
+  }
+  else
+  {
     Py_XDECREF(pFunc);
     return false;
   }
 }
 
-PyObject *Py::runFunction(std::string Module, std::string FuncName,
-                          std::vector<PyObject *> Arg) {
+PyObject *PyBase::runFunction(std::string Module, std::string FuncName,
+                              std::vector<PyObject *> Arg)
+{
   PyObject *pFunc = PyObject_GetAttrString(this->ImportAndGetModule(Module),
                                            FuncName.c_str());
-  if (pFunc && PyCallable_Check(pFunc)) {  // it's a go, function exists
+  if (pFunc && PyCallable_Check(pFunc))
+  { // it's a go, function exists
 
     PyObject *pArgs = PyTuple_New(Arg.size());
-    for (unsigned int i = 0; i < Arg.size(); ++i) {
+    for (unsigned int i = 0; i < Arg.size(); ++i)
+    {
       PyTuple_SetItem(pArgs, i, Arg[i]);
     }
     PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
-    if (PyErr_Occurred()) {
+    if (PyErr_Occurred())
+    {
       PyErr_Print();
       std::string o;
       o = Module + "." + FuncName;
@@ -249,74 +280,84 @@ PyObject *Py::runFunction(std::string Module, std::string FuncName,
     Py_DECREF(pFunc);
     // Py_XDECREF(pValue);
     return pValue;
-  } else {
-    if (PyErr_Occurred()) PyErr_Print();
+  }
+  else
+  {
+    if (PyErr_Occurred())
+      PyErr_Print();
     std::string o;
     o = Module + "." + FuncName;
     this->lintcatcher(FUNCTION_NOT_FOUND, o);
     return static_cast<PyObject *>(nullptr);
   }
 }
-void Py::runVoidFunction(std::string Module, std::string FuncName,
-                         std::vector<PyObject *> Arg) {
+void PyBase::runVoidFunction(std::string Module, std::string FuncName,
+                             std::vector<PyObject *> Arg)
+{
   PyObject *r = this->runFunction(Module, FuncName, Arg);
   Py_XDECREF(r);
 }
-void Py::lintcatcher(int a_i) {
-  switch (a_i) {
-    case MULTIPLE_INSTANCES_DETECTED: {
-      std::string o;
-      o = "Multiple instances detected. Py is meant to be instantiated only "
-          "once.";
+void PyBase::lintcatcher(int a_i)
+{
+  switch (a_i)
+  {
+  case MULTIPLE_INSTANCES_DETECTED:
+  {
+    std::string o;
+    o = "Multiple instances detected. Py is meant to be instantiated only "
+        "once.";
 
-      MayDay::Warning(o.c_str());
-      o = "Redefine it as a global variable or wrap it with a singleton "
-          "wrapper.";
-      MayDay::Error(o.c_str());
-    }
-    case CANNOT_START_INTERPRETER:
-      MayDay::Error("There was a problem starting the Python interpreter");
-    case INTERPRETER_CANNOT_BE_INITIALIZED:
-      MayDay::Error(
-          "There was a problem with basinc initializion of the Python "
-          "interpreter");
-    case VALARRAY_TYPE_NOT_SUPPORTED:
-      MayDay::Error("array<type> are only for type int, float or double");
-    case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
-      MayDay::Error("Expected a different number of items in the tuple"); 
-    default:
-      std::cout << a_i << "\n";
-      MayDay::Error("Py:lintcatcher() caught an undefined error.");
+    MayDay::Warning(o.c_str());
+    o = "Redefine it as a global variable or wrap it with a singleton "
+        "wrapper.";
+    MayDay::Error(o.c_str());
+  }
+  case CANNOT_START_INTERPRETER:
+    MayDay::Error("There was a problem starting the Python interpreter");
+  case INTERPRETER_CANNOT_BE_INITIALIZED:
+    MayDay::Error(
+        "There was a problem with basinc initializion of the Python "
+        "interpreter");
+  case VALARRAY_TYPE_NOT_SUPPORTED:
+    MayDay::Error("array<type> are only for type int, float or double");
+  case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+    MayDay::Error("Expected a different number of items in the tuple");
+  default:
+    std::cout << a_i << "\n";
+    MayDay::Error("Py:lintcatcher() caught an undefined error.");
   }
 }
-void Py::lintcatcher(int a_i, std::string name) {
-  switch (a_i) {
-    case MODULE_NOT_FOUND: {
-      std::string o;
-      o = " Cannot find module " + name + ".";
-      MayDay::Error(o.c_str());
-    }
-    case FUNCTION_NOT_FOUND: {
-      std::string o;
-      o = " Cannot find function " + name;
-      MayDay::Error(o.c_str());
-    }
-    case WRONG_NUMBER_OF_ARGUMENTS: {
-      std::string o;
-      o = "The function " + name +
-          " encountered and error: wrong number/type of arguments?";
-      std::exit(0);
-      MayDay::Error(o.c_str());
-    }
-    case CANNOT_PACK_TYPE:
-      MayDay::Error(" Cannot pack type");
-    case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
-      MayDay::Error("Expected a different number of items in the tuple");
-    default:
-      std::cout << a_i << "\n";
-      MayDay::Warning("Py::lintcatcher() caught something wrong.");
-      MayDay::Error(name.c_str());
+void PyBase::lintcatcher(int a_i, std::string name)
+{
+  switch (a_i)
+  {
+  case MODULE_NOT_FOUND:
+  {
+    std::string o;
+    o = " Cannot find module " + name + ".";
+    MayDay::Error(o.c_str());
+  }
+  case FUNCTION_NOT_FOUND:
+  {
+    std::string o;
+    o = " Cannot find function " + name;
+    MayDay::Error(o.c_str());
+  }
+  case WRONG_NUMBER_OF_ARGUMENTS:
+  {
+    std::string o;
+    o = "The function " + name +
+        " encountered and error: wrong number/type of arguments?";
+    std::exit(0);
+    MayDay::Error(o.c_str());
+  }
+  case CANNOT_PACK_TYPE:
+    MayDay::Error(" Cannot pack type");
+  case TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
+    MayDay::Error("Expected a different number of items in the tuple");
+  default:
+    std::cout << a_i << "\n";
+    MayDay::Warning("Py::lintcatcher() caught something wrong.");
+    MayDay::Error(name.c_str());
   }
 }
-
-
