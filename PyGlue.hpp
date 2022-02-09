@@ -32,7 +32,7 @@ inline std::string Py::TypeOf()
                 "Feel free to add to the list and post back.");
   TYPEtoSTR(int) TYPEtoSTR(double) TYPEtoSTR(float)
 
-      Py::lintcatcher(VALARRAY_TYPE_NOT_SUPPORTED);
+      Py::lintcatcher(Errors::VALARRAY_TYPE_NOT_SUPPORTED);
   return "";
 }
 //

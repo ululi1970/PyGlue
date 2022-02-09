@@ -49,7 +49,7 @@ protected:
   static PyObject *runFunction(std::string Module, std::string function,
                                std::vector<PyObject *> arg);
 
-private:
+
   enum Errors
   {
     MULTIPLE_INSTANCES_DETECTED = 0,

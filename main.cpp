@@ -77,6 +77,7 @@ struct C {
        m_ptr=other.m_ptr;
        m_size=other.m_size;
        m_py=other.m_py;
+       return *this;
     }
     C(const C& other):m_size(other.m_size),m_ptr(other.m_ptr),m_py(other.m_py){
         Py_INCREF(m_py);

@@ -160,7 +160,7 @@ public:
   static inline void unpack(std::array<T, N> &t, PyObject *a_pin)
   {
     if (PyTuple_Size(a_pin) != N)
-      Py::lintcatcher(TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
+      Py::lintcatcher(Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
     for (int i = 0; i < N; ++i)
       Py::unpack(t[i], PyTuple_GetItem(a_pin, i));
     if (PyErr_Occurred())
