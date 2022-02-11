@@ -61,48 +61,7 @@ PyObject *Py::makeView(const T &a_v)
   return PyMemoryView_FromMemory(p, size, PyBUF_READ);
 }
 
-// these functions are used to pack contiguous data
-template <class T>
-PyObject *Py::packCont(T &a_v)
-{
-  using type = typename T::value_type;
-  PyObject *pView = Py::makeView(a_v);
-  PyObject *pSize = PyLong_FromLong(a_v.size());
-  // std::cout << TypeOf<T>().c_str() << std::endl;
-  PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
-  PyObject *pArgs = PyTuple_New(3 + 1);
-  PyTuple_SetItem(pArgs, 0, pSize);
-  PyTuple_SetItem(pArgs, 1, pTypeOfT);
-  PyTuple_SetItem(pArgs, 2, pView);
-  std::string label = "Numpy";
-  PyTuple_SetItem(pArgs, 3, Py::packString(label, false));
-  if (PyErr_Occurred())
-  {
-    PyErr_Print();
-  }
-  return pArgs;
-}
-
-template <class T>
-PyObject *Py::packCont(const T &a_v)
-{
-  using type = typename T::value_type;
-  PyObject *pView = Py::makeView(a_v);
-  PyObject *pSize = PyLong_FromLong(a_v.size());
-  // std::cout << TypeOf<T>().c_str() << std::endl;
-  PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
-  PyObject *pArgs = PyTuple_New(4);
-  PyTuple_SetItem(pArgs, 0, pSize);
-  PyTuple_SetItem(pArgs, 1, pTypeOfT);
-  PyTuple_SetItem(pArgs, 2, pView);
-  std::string label = "Numpy";
-  PyTuple_SetItem(pArgs, 3, Py::packString(label, false));
-  if (PyErr_Occurred())
-  {
-    PyErr_Print();
-  }
-  return pArgs;
-}
+// 
 
 // bottom of recursion
 template <class T>

@@ -89,14 +89,7 @@ of the class. This requires that T provides  T& operator=(const T&).
 See the attached main.cpp for some examples of use.
 */
 
-/* little helper class that always return false at compile time.
-Useful when there is the need to trigger a static_assert in the definition
-of a template function which needs to be triggered only if the template is
-actually instantiated. The Intel compiler does not seem to act on a static_assert
-unless the template is initiated. GNU and CLang  parse it.
-Using static_assert<alwaysFalse<T>::value, "Error") prevents spurious stoppages
-since only when T is known at instantiation the argument can be evaluated by the compiler.
-*/
+// helper classes for type introspection
 template <typename T>
 struct alwaysFalse : std::false_type
 {
@@ -105,10 +98,25 @@ struct alwaysFalse : std::false_type
 template <typename T>
 struct isNumeric
 {
-  static constexpr bool value = (std::is_same<T, int>::value ||
-                                 std::is_same<T, float>::value ||
-                                 std::is_same<T, double>::value);
+  static constexpr bool value = (std::is_same<T, typename std::remove_cv<int>::type>::value ||
+                                 std::is_same<T, typename std::remove_cv<float>::type>::value ||
+                                 std::is_same<T, typename std::remove_cv<double>::type>::value);
 };
+
+template< typename T>
+struct is_arrayLike : std::false_type{};
+
+template<typename T>
+struct is_vectorAndNumeric : std::false_type{};
+
+template<typename T, size_t N>
+struct is_arrayLike<std::array<T,N>> : std::true_type{};
+
+template<typename T>
+struct is_arrayLike<std::vector<T>> : std::true_type{};
+
+template<typename T>
+struct is_vectorAndNumeric<std::vector<T>> : isNumeric<T>{};
 
 class Py : public PyBase
 {
@@ -152,22 +160,24 @@ public:
   template <class T>
   static inline void unpack(T &t, PyObject *a_pin)
   {
-    t = T(a_pin);
-  }
-
-  // sepcialization for unpacking arrays
-  template <class T, size_t N>
-  static inline void unpack(std::array<T, N> &t, PyObject *a_pin)
-  {
-    if (PyTuple_Size(a_pin) != N)
-      Py::lintcatcher(Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
-    for (int i = 0; i < N; ++i)
-      Py::unpack(t[i], PyTuple_GetItem(a_pin, i));
-    if (PyErr_Occurred())
+    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
     {
-      PyErr_Print();
+      if (PyTuple_Size(a_pin) != t.size())
+      Py::lintcatcher(Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
+      for (int i = 0; i < t.size(); ++i)
+        Py::unpack(t[i], PyTuple_GetItem(a_pin, i));
+      if (PyErr_Occurred())
+      {
+       PyErr_Print();
+      }
+    }
+    else
+    {
+      t = T(a_pin);
     }
   }
+
+  
 
   template <class T>
   static inline PyObject *pack(const T *t)
@@ -187,150 +197,54 @@ public:
   }
 
   template <class T>
-  static inline PyObject *pack(T &&t)
+  static PyObject *pack(T &&t)
   {
-    return t.pack();
-  }
-
-  // partial specializations for vector-like objects.
-  // Note the different treatment for vectors. If numeric type,
-  // it is packaged to be aliased by a Numpy.
-  // Otherwise, it is meant to appear as a tuple of (Ts)
-  // arrays are always appear as tuple of Ts.
-
-  template <class T, size_t N>
-  static inline PyObject *pack(std::array<T, N> &a_v)
-  {
-    PyObject *pArg = PyTuple_New(N + 1);
-    int pos = 0;
-    for (auto &item : a_v)
+    if constexpr (is_vectorAndNumeric<typename std::remove_reference<T>::type>::value)
+    {
+        using type = typename std::remove_reference<T>::type::value_type;
+        PyObject *pView = Py::makeView(t);
+        PyObject *pSize = PyLong_FromLong(t.size());
+        // std::cout << TypeOf<T>().c_str() << std::endl;
+        PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
+        PyObject *pArgs = PyTuple_New(3 + 1);
+        PyTuple_SetItem(pArgs, 0, pSize);
+        PyTuple_SetItem(pArgs, 1, pTypeOfT);
+        PyTuple_SetItem(pArgs, 2, pView);
+        std::string label = "Numpy";
+        PyTuple_SetItem(pArgs, 3, Py::packString(label, false));
+        if (PyErr_Occurred())
+        {
+          PyErr_Print();
+        }
+        return pArgs;
+    } 
+    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
     {
 
-      PyTuple_SetItem(pArg, pos++, Py::pack(item));
-    }
-    PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
-  }
+      PyObject *pArg = PyTuple_New(t.size() + 1);
+      int pos = 0;
+      for (auto &item : t)
+      {
 
-  template <class T, size_t N>
-  static inline PyObject *pack(const std::array<T, N> &a_v)
-  {
-    PyObject *pArg = PyTuple_New(N + 1);
-    int pos = 0;
-    for (auto &item : a_v)
-    {
-      PyTuple_SetItem(pArg, pos++, Py::pack(item));
-    }
-    PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
-  }
-
-  template <class T, size_t N>
-  static inline PyObject *pack(std::array<T, N> &&a_v)
-  {
-    PyObject *pArg = PyTuple_New(N + 1);
-    int pos = 0;
-    for (auto &item : a_v)
-    {
-      PyTuple_SetItem(pArg, pos++, Py::pack(item));
-    }
-    std::string label = "tuple";
-    PyTuple_SetItem(pArg, pos, PyUnicode_FromString(label.c_str()));
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
-  }
-
-  template <class T>
-  static inline PyObject *pack(std::vector<T> &a_v)
-  {
-    PyObject *pArg = nullptr;
-    if constexpr (isNumeric<T>::value)
-    {
-      pArg = Py::packCont(a_v);
-    }
+        PyTuple_SetItem(pArg, pos++, Py::pack(item));
+      }
+      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
+      if (PyErr_Occurred())
+      {
+        PyErr_Print();
+      }
+      return pArg;
+    } 
     else
     {
-      int size = a_v.size();
-      pArg = PyTuple_New(size + 1);
-      int pos = 0;
-      for (auto &item : a_v)
-      {
-        PyTuple_SetItem(pArg, pos++, item.pack());
-      }
-      std::string label = "tuple";
-      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(label.c_str()));
+      return t.pack();
     }
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
+
   }
 
-  template <class T>
-  static inline PyObject *pack(const std::vector<T> &a_v)
-  {
-    PyObject *pArg = nullptr;
-    if constexpr (isNumeric<T>::value)
-    {
-      pArg = Py::packCont(a_v);
-    }
-    else
-    {
-      int size = a_v.size();
-      pArg = PyTuple_New(size + 1);
-      int pos = 0;
-      for (auto &item : a_v)
-      {
-        PyTuple_SetItem(pArg, pos++, item.pack());
-      }
-      std::string label = "tuple";
-      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(label.c_str()));
-    }
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
-  }
+  
 
-  template <class T>
-  static inline PyObject *pack(std::vector<T> &&a_v)
-  {
-    PyObject *pArg = nullptr;
-    if constexpr (isNumeric<T>::value)
-    {
-      pArg = Py::packCont(std::move(a_v));
-    }
-    else
-    {
-      int size = a_v.size();
-      pArg = PyTuple_New(size + 1);
-      int pos = 0;
-      for (auto &item : a_v)
-      {
-        PyTuple_SetItem(pArg, pos++, item.pack());
-      }
-      std::string label = "tuple";
-      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(label.c_str()));
-    }
-    if (PyErr_Occurred())
-    {
-      PyErr_Print();
-    }
-    return pArg;
-  }
+  
 
 private:
   // bottom of recursion

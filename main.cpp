@@ -53,7 +53,7 @@ struct B {
     PyObject* pack(){
         PyObject* pArg=PyTuple_New(2+1);
         PyTuple_SetItem(pArg,0,m_a.pack());// here we use A::pack() to pack A into the first element 
-        PyTuple_SetItem(pArg,1,Py::packCont(m_vec));// and we use Py::packCont() to pack the vector.
+        PyTuple_SetItem(pArg,1,Py::pack(m_vec));// and we use Py::packCont() to pack the vector.
                                                     // in such a way that a numpy can be aliased to it.    
         PyTuple_SetItem(pArg,2,Py::packString("B",false)); // the label for identification. 
         
