@@ -103,11 +103,14 @@ struct isNumeric
                                  std::is_same<T, typename std::remove_cv<double>::type>::value);
 };
 
+
+
 template< typename T>
 struct is_arrayLike : std::false_type{};
 
 template<typename T>
 struct is_vectorAndNumeric : std::false_type{};
+
 
 template<typename T, size_t N>
 struct is_arrayLike<std::array<T,N>> : std::true_type{};
@@ -137,11 +140,6 @@ public:
   template <class T, class... Ts>
   static T PythonReturnFunction(std::string Module, std::string function, Ts &&...ts);
 
-  // these are specializations used for classes that have a vector-like structure (.size() and iterators)
-  template <class T>
-  static PyObject *packCont(T &a_v);
-  template <class T>
-  static PyObject *packCont(const T &a_v);
 
   // used to set a str of the correspoding type, to be used to specify what type
   // of numpy should be attached to the memView
@@ -155,30 +153,14 @@ public:
   template <class T>
   static PyObject *makeView(const T &a_v);
 
-  // basic unpacking template for objects that provide T(PyObject*) and PyObject* T::pack()
-
+  
+// unpacking function
   template <class T>
-  static inline void unpack(T &t, PyObject *a_pin)
-  {
-    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
-    {
-      if (PyTuple_Size(a_pin) != t.size())
-      Py::lintcatcher(Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS);
-      for (int i = 0; i < t.size(); ++i)
-        Py::unpack(t[i], PyTuple_GetItem(a_pin, i));
-      if (PyErr_Occurred())
-      {
-       PyErr_Print();
-      }
-    }
-    else
-    {
-      t = T(a_pin);
-    }
-  }
-
+  static inline void unpack(T &t, PyObject *a_pin);
   
 
+  
+//packing functions
   template <class T>
   static inline PyObject *pack(const T *t)
   {
@@ -197,50 +179,8 @@ public:
   }
 
   template <class T>
-  static PyObject *pack(T &&t)
-  {
-    if constexpr (is_vectorAndNumeric<typename std::remove_reference<T>::type>::value)
-    {
-        using type = typename std::remove_reference<T>::type::value_type;
-        PyObject *pView = Py::makeView(t);
-        PyObject *pSize = PyLong_FromLong(t.size());
-        // std::cout << TypeOf<T>().c_str() << std::endl;
-        PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
-        PyObject *pArgs = PyTuple_New(3 + 1);
-        PyTuple_SetItem(pArgs, 0, pSize);
-        PyTuple_SetItem(pArgs, 1, pTypeOfT);
-        PyTuple_SetItem(pArgs, 2, pView);
-        std::string label = "Numpy";
-        PyTuple_SetItem(pArgs, 3, Py::packString(label, false));
-        if (PyErr_Occurred())
-        {
-          PyErr_Print();
-        }
-        return pArgs;
-    } 
-    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
-    {
-
-      PyObject *pArg = PyTuple_New(t.size() + 1);
-      int pos = 0;
-      for (auto &item : t)
-      {
-
-        PyTuple_SetItem(pArg, pos++, Py::pack(item));
-      }
-      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
-      if (PyErr_Occurred())
-      {
-        PyErr_Print();
-      }
-      return pArg;
-    } 
-    else
-    {
-      return t.pack();
-    }
-
-  }
+  static inline PyObject *pack(T &&t);
+  
 
   
 
