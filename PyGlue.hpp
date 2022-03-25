@@ -21,7 +21,7 @@ template <class T>
         }
       
     } 
-    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
+    else if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
     {
 
       pArg = PyTuple_New(t.size() + 1);
