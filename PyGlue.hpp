@@ -2,43 +2,46 @@ template <class T>
  inline PyObject* Py::pack(T &&t)
   {
     PyObject* pArg;
-    if constexpr (is_vectorAndNumeric<typename std::remove_reference<T>::type>::value)
+    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
     {
-        using type = typename std::remove_reference<T>::type::value_type;
-        PyObject *pView = Py::makeView(t);
-        PyObject *pSize = PyLong_FromLong(t.size());
-        // std::cout << TypeOf<T>().c_str() << std::endl;
-        PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
-        pArg = PyTuple_New(3 + 1);
-        PyTuple_SetItem(pArg, 0, pSize);
-        PyTuple_SetItem(pArg, 1, pTypeOfT);
-        PyTuple_SetItem(pArg, 2, pView);
-        std::string label = "Numpy";
-        PyTuple_SetItem(pArg, 3, Py::packString(label, false));
+      if constexpr (is_vectorAndNumeric<typename std::remove_reference<T>::type>::value)
+      {
+          using type = typename std::remove_reference<T>::type::value_type;
+          PyObject *pView = Py::makeView(t);
+          PyObject *pSize = PyLong_FromLong(t.size());
+          // std::cout << TypeOf<T>().c_str() << std::endl;
+          PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
+          pArg = PyTuple_New(3 + 1);
+          PyTuple_SetItem(pArg, 0, pSize);
+          PyTuple_SetItem(pArg, 1, pTypeOfT);
+          PyTuple_SetItem(pArg, 2, pView);
+          std::string label = "Numpy";
+          PyTuple_SetItem(pArg, 3, Py::packString(label, false));
+          if (PyErr_Occurred())
+          {
+            PyErr_Print();
+          }
+      
+      
+      } 
+      else 
+      {
+
+        pArg = PyTuple_New(t.size() + 1);
+        int pos = 0;
+        for (auto &item : t)
+        {
+          PyTuple_SetItem(pArg, pos++, Py::pack(item));
+        }
+        PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
         if (PyErr_Occurred())
         {
           PyErr_Print();
         }
-    
-      
-    } 
-    else if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
-    {
-
-      pArg = PyTuple_New(t.size() + 1);
-      int pos = 0;
-      for (auto &item : t)
-      {
-        PyTuple_SetItem(pArg, pos++, Py::pack(item));
+        
       }
-      PyTuple_SetItem(pArg, pos, PyUnicode_FromString(std::string("tuple").c_str()));
-      if (PyErr_Occurred())
-      {
-        PyErr_Print();
-      }
-      
-    } 
-    else
+    } // end block for array like objects
+    else // fall back on type packing member function
     {
       pArg = t.pack();
     }
