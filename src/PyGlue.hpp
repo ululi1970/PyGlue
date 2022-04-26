@@ -2,9 +2,9 @@ template <class T>
  inline PyObject* Py::pack(T &&t)
   {
     PyObject* pArg;
-    if constexpr (is_arrayLike<typename std::remove_reference<T>::type>::value)
+    if constexpr (is_arrayLike<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::value)
     {
-      if constexpr (is_vectorAndNumeric<typename std::remove_reference<T>::type>::value)
+      if constexpr (is_vectorAndNumeric<typename std::remove_cv<typename std::remove_reference<T>::type>::type>::value)
       {
           using type = typename std::remove_reference<T>::type::value_type;
           PyObject *pView = Py::makeView(t);
