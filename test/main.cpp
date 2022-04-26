@@ -37,6 +37,15 @@ struct A {
         PyTuple_SetItem(pArg,2,Py::packString("A", false)); //the third contains the label "A"
         return pArg; // On the Python side, it will be (m_int, (m_arr[0],...,m_arr[N-1]), 'A' )
     }
+    PyObject* pack() const {
+        PyObject* pArg=PyTuple_New(2+1); // On the Python side this will appear as a tuple
+                                        // with three elements. The arguments (m_int and m_arr) and label
+        PyObject* p1=Py::packInt(m_int,false); //we use packInt to pack m_int      
+        PyTuple_SetItem(pArg,0,p1); // and we set it as the first element of the tuple
+        PyTuple_SetItem(pArg,1,Py::pack(m_arr));
+        PyTuple_SetItem(pArg,2,Py::packString("A", false)); //the third contains the label "A"
+        return pArg; // On the Python side, it will be (m_int, (m_arr[0],...,m_arr[N-1]), 'A' )
+    }
 };
 struct B {
     A<4> m_a;
@@ -112,6 +121,7 @@ int main()
     std::array<A<5>,2> tuple;
     tuple[0] = Py::PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
     tuple[1] = Py::PythonReturnFunction<A<5>>("PyMyModule","printA",A<5>());
+    
     Py::PythonFunction("PyMyModule", "PrintTuple", tuple);
     B b(8);
 
@@ -121,8 +131,9 @@ int main()
     {
         newVec[i]=tuple[i];
     }
+    const auto& dummy = newVec;
     Py::PythonFunction("PyMyModule", "PrintTuple", newTuple);
-    Py::PythonFunction("PyMyModule", "PrintTuple", newVec);
+    Py::PythonFunction("PyMyModule", "PrintTuple", dummy);
     Py::PythonFunction("PyMyModule", "printB", B(8));
 
     C<2,double> c=Py::PythonReturnFunction<C<2,double>>("PyMyModule", "MakeC", 2,2, "double");
