@@ -320,22 +320,30 @@ void PyBase::lintcatcher(int a_i)
     o = "Redefine it as a global variable or wrap it with a singleton "
         "wrapper.";
     MayDay::Error(o.c_str());
+    break;
   }
+     
   case Errors::CANNOT_START_INTERPRETER:
     MayDay::Error("There was a problem starting the Python interpreter");
+    break;
   case Errors::INTERPRETER_CANNOT_BE_INITIALIZED:
     MayDay::Error(
         "There was a problem with basinc initializion of the Python "
         "interpreter");
+    break;
   case Errors::VALARRAY_TYPE_NOT_SUPPORTED:
     MayDay::Error("array<type> are only for type int, float or double");
+    break;
   case Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
     MayDay::Error("Expected a different number of items in the tuple");
+    break;
   case Errors::INTERPRETER_NEEDS_TO_BE_INITIALIZED:
     MayDay::Error("Python Script Invoked before running Py::start()");
+    break;
   default:
     std::cout << a_i << "\n";
     MayDay::Error("Py:lintcatcher() caught an undefined error.");
+    break;
   }
 }
 void PyBase::lintcatcher(int a_i, std::string name)
@@ -347,12 +355,14 @@ void PyBase::lintcatcher(int a_i, std::string name)
     std::string o;
     o = " Cannot find module " + name + ".";
     MayDay::Error(o.c_str());
+    break;
   }
   case Errors::FUNCTION_NOT_FOUND:
   {
     std::string o;
     o = " Cannot find function " + name;
     MayDay::Error(o.c_str());
+    break;
   }
   case Errors::WRONG_NUMBER_OF_ARGUMENTS:
   {
@@ -361,14 +371,18 @@ void PyBase::lintcatcher(int a_i, std::string name)
         " encountered and error: wrong number/type of arguments?";
 
     MayDay::Error(o.c_str());
+    break;
   }
   case Errors::CANNOT_PACK_TYPE:
     MayDay::Error(" Cannot pack type");
+    break;  
   case Errors::TUPLE_HAS_WRONG_NUMBER_OF_ELEMENTS:
     MayDay::Error("Expected a different number of items in the tuple");
+    break;
   default:
     std::cout << a_i << "\n";
     MayDay::Warning("Py::lintcatcher() caught something wrong.");
     MayDay::Error(name.c_str());
+    break;
   }
 }
