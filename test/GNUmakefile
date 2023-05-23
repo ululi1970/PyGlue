@@ -1,9 +1,9 @@
-PYTHON_INCDIR=/usr/include/python3.6m 
+PYTHON_INCDIR=/usr/include/python3.10/
 PYTHON_LIBDIR=./
 SRC=../src/
 ERR=../ErrorHandling/
 testPyGlue: main.o PyBase.o MayDay.o
-	g++ -g  -std=c++17 -o testPyGlue main.o PyBase.o MayDay.o -L$(PYTHON_LIBDIR) -lpython3.6m
+	g++ -g  -std=c++17 -o testPyGlue main.o PyBase.o MayDay.o -L$(PYTHON_LIBDIR) -lpython3.10
 	
 main.o: $(SRC)PyGlue.H $(SRC)PyGlue.hpp $(ERR)MayDay.H $(SRC)PyBase.H main.cpp
 	g++ -g -std=c++17 -I$(PYTHON_INCDIR) -I$(ERR) -I$(SRC) -c main.cpp

@@ -105,18 +105,18 @@ struct isNumeric
 
 
 
-template< typename T>
+template<typename T, typename Q=void>
 struct is_arrayLike : std::false_type{};
 
 template<typename T>
 struct is_vectorAndNumeric : std::false_type{};
 
 
-template<typename T, size_t N>
-struct is_arrayLike<std::array<T,N>> : std::true_type{};
+template<typename T>
+struct is_arrayLike<T, typename std::enable_if<std::is_base_of<std::array<typename T::value_type,  std::tuple_size<T>::value >, T>::value>::type> : std::true_type{};
 
 template<typename T>
-struct is_arrayLike<std::vector<T>> : std::true_type{};
+struct is_arrayLike<T, typename std::enable_if<std::is_base_of<std::vector<typename T::value_type>,                             T>::value>::type> : std::true_type{};
 
 template<typename T>
 struct is_vectorAndNumeric<std::vector<T>> : isNumeric<T>{};
