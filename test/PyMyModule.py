@@ -1,6 +1,6 @@
 import PyGlue as pg
 import numpy as np
-
+import sys
 @pg.PYGLUE
 def noArgs():
     pass
@@ -75,4 +75,15 @@ def printB(v):
     print(v)
     v.m_vect-=10
 
+@pg.PYGLUE
+def VectorSizeT(v):
+    print(type(v))
+    print(v[:10])
+    #sys.exit(0)
+
+@pg.PYGLUE
+def ArraySizeT(v):
+    print(type(v))
+    print(v)
+    #sys.exit(0)    
 

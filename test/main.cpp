@@ -145,7 +145,7 @@ int main()
         {   iv[0]=i;
             cout << i << " , " << j << "  -- " << c[iv] << endl; }
     }
-    int N = 12 * 25 * 38;
+    constexpr int N = 12 * 25 * 38;
     std::vector<float> X(N);
     std::vector<float> Y(N);
     std::vector<double> XD(N);
@@ -153,6 +153,8 @@ int main()
     std::vector<int> XI(N);
     std::vector<int> YI(N);
     std::vector<float> AI(N);
+    std::array<std::size_t, 10> SI;
+    std::vector<std::size_t> SSI(10);
     // cout << boolalpha;
     // cout<< "Are valarrays sizeable ? " << has_size_func<valarray<double>>::value << endl;
     // cout<< "Are valarrays sizeable (alternative formulation) ? " << has_size<valarray<double>>::value << endl;
@@ -177,7 +179,12 @@ int main()
         auto f=[]() ->float {return (rand() %10)/10.;};
         generate(AI.begin(), AI.end(), f);
     }
-    
+    {
+        auto f =[]() -> std::size_t{return (rand() %10);};
+        generate(SI.begin(), SI.end(), f);
+        generate(SSI.begin(), SSI.end(), f);
+    }
+        
    
     
     
@@ -198,6 +205,12 @@ int main()
     Py::PythonFunction("PyMyModule", "ValVal", X, Y,s);
     
     Py::PythonFunction("PyMyModule", "IntIntVal",i,j, AI);
+    
+    for (auto i: SSI)
+    {std::cout << i << " "; }
+    std::cout << std::endl;
+    Py::PythonFunction("PyMyModule", "VectorSizeT", SSI);
+
 
     std::string o = "hello world";
     Py::PythonFunction("PyAnotherModule", "PrintStringInt", o, l);

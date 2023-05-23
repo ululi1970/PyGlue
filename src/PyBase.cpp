@@ -104,6 +104,23 @@ PyObject *PyBase::packInt(int a_i, bool tagIt)
   return pInt;
 }
 
+PyObject *PyBase::packSize_t(std::size_t a_i, bool tagIt)
+{
+  if (!tagIt)
+    return PyLong_FromSize_t(a_i);
+  PyObject *pInt = PyTuple_New(2);
+  PyTuple_SetItem(pInt, 0, PyLong_FromSize_t(a_i));
+
+  std::string Label = "size_t";
+  PyObject *pLabel = PyUnicode_FromString(Label.c_str());
+  PyTuple_SetItem(pInt, 1, pLabel);
+  if (PyErr_Occurred())
+  {
+    PyErr_Print();
+  }
+  return pInt;
+}
+
 PyObject *PyBase::packBool(bool a_b, bool tagIt)
 {
   if (!tagIt)
@@ -158,6 +175,16 @@ int PyBase::unpackInt(PyObject *a_pin)
 {
 
   int x = static_cast<int>(PyLong_AsLong(a_pin));
+  if (PyErr_Occurred())
+  {
+    PyErr_Print();
+  }
+  return x;
+}
+std::size_t PyBase::unpackSize_t(PyObject *a_pin)
+{
+
+  std::size_t x = static_cast<std::size_t>(PyLong_AsSize_t(a_pin));
   if (PyErr_Occurred())
   {
     PyErr_Print();

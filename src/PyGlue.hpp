@@ -90,12 +90,13 @@ T Py::PythonReturnFunction(std::string Module, std::string function, Ts &&...ts)
 //
 template <class T>
 inline std::string Py::TypeOf()
-{
-  const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double);
+{ 
+  using size_t = std::size_t;
+  const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double) || SAME(size_t);
   static_assert(check_type_is_defined,
                 "Numeric arrays are only supported for int, float and double. "
                 "Feel free to add to the list and post back.");
-  TYPEtoSTR(int) TYPEtoSTR(double) TYPEtoSTR(float)
+  TYPEtoSTR(int) TYPEtoSTR(double) TYPEtoSTR(float) TYPEtoSTR(size_t)
 
       Py::lintcatcher(Errors::VALARRAY_TYPE_NOT_SUPPORTED);
   return "";
@@ -156,6 +157,11 @@ inline void Py::unpack(int &x, PyObject *a_pin)
   x = Py::unpackInt(a_pin);
 }
 template <>
+inline void Py::unpack(std::size_t &x, PyObject *a_pin)
+{
+  x = Py::unpackSize_t(a_pin);
+}
+template <>
 inline void Py::unpack(float &x, PyObject *a_pin)
 {
   x = Py::unpackFloat(a_pin);
@@ -181,6 +187,11 @@ inline PyObject *Py::pack(const int &x)
   return Py::packInt(x);
 }
 template <>
+inline PyObject *Py::pack(const std::size_t &x)
+{
+  return Py::packSize_t(x);
+}
+template <>
 inline PyObject *Py::pack(const float &x)
 {
   return Py::packFloat(x);
@@ -204,6 +215,11 @@ template <>
 inline PyObject *Py::pack(int &x)
 {
   return Py::packInt(x);
+}
+template<>
+inline PyObject *Py::pack(std::size_t &x)
+{
+  return Py::packSize_t(x);
 }
 template <>
 inline PyObject *Py::pack(float &x)

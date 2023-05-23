@@ -36,12 +36,15 @@ static void stop();
   static PyObject *packInt(int a_i, bool tagIt = true);
   static PyObject *packBool(bool a_b, bool tagIt = true);
   static PyObject *packString(std::string s, bool tagIt = true);
+  static PyObject *packSize_t(std::size_t a_i, bool tagIt = true);
 
   static int unpackInt(PyObject *a_pin);
   static float unpackFloat(PyObject *a_pin);
   static double unpackDouble(PyObject *a_pin);
   static std::string unpackString(PyObject *a_pin);
   static bool unpackBool(PyObject *a_pin);
+  static std::size_t unpackSize_t(PyObject *a_pin);
+
 
 protected:
   static void runVoidFunction(std::string Module, std::string function,

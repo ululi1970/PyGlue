@@ -57,7 +57,7 @@ def ArrayToNumpy(v):
 def tuplifier(arg):
     return tuple([Transmogrifiers[WhatIs(a)](a) for a in arg[:-1]])
 
-ArrayTypes = {'int': np.int32,'float': np.float32,'double': np.float64}
+ArrayTypes = {'int': np.int32,'float': np.float32,'double': np.float64, 'size_t' : np.uint64}
 
 Transmogrifiers ={
                  'int' : strip,
@@ -65,6 +65,7 @@ Transmogrifiers ={
                  'float' : strip,
                  'bool' : strip,
                  'str' : strip,
+                 'size_t' : strip,
                  'id' : id,
                  'A' : A,
                  'B' : B,
@@ -95,7 +96,9 @@ def PYGLUE(func): # this is the decorator
         except:
             print([a for a in args])
             print([WhatIs(a) for a in args])
+           
             raise(ValueError(""))
+            
         return func(*args, **kargs)
     return wrapper
 
