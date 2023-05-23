@@ -100,7 +100,8 @@ struct isNumeric
 {
   static constexpr bool value = (std::is_same<T, typename std::remove_cv<int>::type>::value ||
                                  std::is_same<T, typename std::remove_cv<float>::type>::value ||
-                                 std::is_same<T, typename std::remove_cv<double>::type>::value);
+                                 std::is_same<T, typename std::remove_cv<double>::type>::value ||
+                                 std::is_same<T, typename std::remove_cv<std::size_t>::type>::value );
 };
 
 
