@@ -10,7 +10,7 @@ template <class T>
           PyObject *pView = Py::makeView(t);
           PyObject *pSize = PyLong_FromLong(t.size());
           // std::cout << TypeOf<T>().c_str() << std::endl;
-          PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>().c_str());
+          PyObject *pTypeOfT = PyUnicode_FromString(Py::TypeOf<type>::name());
           pArg = PyTuple_New(3 + 1);
           PyTuple_SetItem(pArg, 0, pSize);
           PyTuple_SetItem(pArg, 1, pTypeOfT);
@@ -88,27 +88,17 @@ T Py::PythonReturnFunction(std::string Module, std::string function, Ts &&...ts)
   return t;
 }
 //
-template <class T>
-inline std::string Py::TypeOf()
-{ 
-  using size_t = std::size_t;
-  const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double) || SAME(size_t);
-  static_assert(check_type_is_defined,
-                "Numeric arrays are only supported for int, float and double. "
-                "Feel free to add to the list and post back.");
-  TYPEtoSTR(int) TYPEtoSTR(double) TYPEtoSTR(float) TYPEtoSTR(size_t)
 
-      Py::lintcatcher(Errors::VALARRAY_TYPE_NOT_SUPPORTED);
-  return "";
-}
+
 //
 template <class T>
 PyObject *Py::makeView(T &a_v)
 {
   using type = typename T::value_type;
-  Py::TypeOf<type>(); // will stop compilation if type is not in the list
+  //Py::TypeOf<type>(); // will stop compilation if type is not in the list
 
   unsigned long long size = a_v.size() * sizeof(type);
+  
   char *p = reinterpret_cast<char *>(&a_v[0]);
   return PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
 }
@@ -117,7 +107,7 @@ template <class T>
 PyObject *Py::makeView(const T &a_v)
 {
   using type = typename T::value_type;
-  Py::TypeOf<type>(); // will stop compilation if type is not in the list
+  //Py::TypeOf<type>(); // will stop compilation if type is not in the list
 
   unsigned long long size = a_v.size() * sizeof(type);
   auto it(a_v.begin());

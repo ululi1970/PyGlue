@@ -67,7 +67,7 @@ def DoSomethingToV(v):
 @pg.PYGLUE    
 def printA(v):
     print(v)
-    v.m_arr=tuple(x+2. for x in v.m_arr)
+    v.m_arr=np.array([x+2. for x in v.m_arr])
     v.m_int=5
     return v.toCPP()
 @pg.PYGLUE
@@ -86,4 +86,13 @@ def ArraySizeT(v):
     print(type(v))
     print(v)
     #sys.exit(0)    
-
+@pg.PYGLUE
+def printD(v):
+    print(v)
+    print(v.dtype)
+    print(v.shape)
+    for i in range(len(v)):
+        print(type(v[i]))
+        v[i]=(0,0,0)
+        
+    print(v)

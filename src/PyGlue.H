@@ -43,6 +43,7 @@
 
 #define SAME(X) std::is_same<T, X>::value
 
+
 // The purpose of this class is to be able to run functions on Python
 // from within a C++ code. The use is
 /* {Py Python;
@@ -95,7 +96,7 @@ struct alwaysFalse : std::false_type
 {
 };
 
-template <typename T>
+template <typename T, typename Q = void>
 struct isNumeric
 {
   static constexpr bool value = (std::is_same<T, typename std::remove_cv<int>::type>::value ||
@@ -104,14 +105,11 @@ struct isNumeric
                                  std::is_same<T, typename std::remove_cv<std::size_t>::type>::value );
 };
 
-
-
-template<typename T, typename Q=void>
-struct is_arrayLike : std::false_type{};
-
 template<typename T>
-struct is_vectorAndNumeric : std::false_type{};
+struct isNumeric<T, typename std::enable_if<T::isConvertibleToNumpy>::type> : std::true_type{};
 
+template<typename T, typename Q = void>
+struct is_arrayLike : std::false_type{};
 
 template<typename T>
 struct is_arrayLike<T, typename std::enable_if<std::is_base_of<std::array<typename T::value_type,  std::tuple_size<T>::value >, T>::value>::type> : std::true_type{};
@@ -119,8 +117,18 @@ struct is_arrayLike<T, typename std::enable_if<std::is_base_of<std::array<typena
 template<typename T>
 struct is_arrayLike<T, typename std::enable_if<std::is_base_of<std::vector<typename T::value_type>,                             T>::value>::type> : std::true_type{};
 
+// template<typename T>
+// struct is_vectorAndNumeric : std::false_type{};
+// template<typename T>
+// struct is_vectorAndNumeric<std::vector<T>> : isNumeric<T>{};
+
+
 template<typename T>
-struct is_vectorAndNumeric<std::vector<T>> : isNumeric<T>{};
+struct is_vectorAndNumeric 
+{
+   static constexpr bool value = (is_arrayLike<T>::value && isNumeric<typename T::value_type>::value);
+};
+
 
 class Py : public PyBase
 {
@@ -142,11 +150,7 @@ public:
   static T PythonReturnFunction(std::string Module, std::string function, Ts &&...ts);
 
 
-  // used to set a str of the correspoding type, to be used to specify what type
-  // of numpy should be attached to the memView
-  template <class T>
-  static std::string TypeOf();
-
+  
   // Provides a view of numeric vectors.
   template <class T>
   static PyObject *makeView(T &a_v);
@@ -183,7 +187,43 @@ public:
   static inline PyObject *pack(T &&t);
   
 
+  // used to set a str of the correspoding type, to be used to specify what type
+  // of numpy should be attached to the memView
+template <class T, typename Q=void>
+struct TypeOf
+{ 
+  TypeOf() = delete;
+  TypeOf(const TypeOf &) = delete;
+  TypeOf &operator=(const TypeOf) = delete;
+  static auto name(){
+    return typeToStr().c_str();
+  }
+
+  private:
+  static std::string typeToStr(){
+  using size_t = std::size_t;
+  const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double) || SAME(size_t);
+  static_assert(check_type_is_defined,
+                "Numeric arrays are only supported for int, float, double and size_t. "
+                "Either your type is not supported, or it does not properly define isConvertibleToNumpy");
+  TYPEtoSTR(int) TYPEtoSTR(double) TYPEtoSTR(float) TYPEtoSTR(size_t)
+
+      
+  return "";
+}
+};
+
+template <class T>
+struct TypeOf<T,typename std::enable_if<T::isConvertibleToNumpy>::type> 
+{ 
+  TypeOf() = delete;
+  TypeOf(const TypeOf &) = delete;
+  TypeOf &operator=(const TypeOf) = delete;
+  static auto name(){
+    return T::numpyName().c_str();
+  }
   
+};
 
   
 

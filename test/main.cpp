@@ -107,14 +107,43 @@ struct C {
         return *(m_ptr+index);}
 };
 
+struct D{
+    int m_vect[3];
+    D(): m_vect{7,8,9}{};
+    static constexpr bool isConvertibleToNumpy = true;
+    static std::string numpyName() {return "DStruc";}
+};
+
 int main()
 {
-   
+    std::cout << is_arrayLike<decltype(A<5>())>::value << std::endl;
+    std::cout << is_arrayLike<decltype(std::vector<decltype(A<5>())>())>::value <<std::endl;
+    std::cout << is_vectorAndNumeric<decltype(std::vector<decltype(A<5>())>())>::value <<std::endl;
+    std::cout << is_vectorAndNumeric<decltype(std::vector<decltype(D())>())>::value <<std::endl;
+    std::cout << is_vectorAndNumeric<decltype(std::array<decltype(D()),8>())>::value <<std::endl;
+
+
     auto InitCommands=Py::DefaultInitCommands;
     InitCommands.push_back("print(sys.path)");
     Py::start(InitCommands);
     
     Py::PythonFunction("PyMyModule", "noArgs");
+    
+    std::array<D,5> myD;
+    for (auto i : myD){
+        for (auto x: i.m_vect){
+            std::cout << x << std::endl; 
+        }
+    }
+    Py::PythonFunction("PyMyModule", "printD", myD);
+    
+    for (auto i : myD){
+        for (auto x: i.m_vect){
+            std::cout << x << std::endl; 
+        }
+    }
+    
+    
     std::array<int,2>(Py::PythonReturnFunction<std::array<int,2>>("PyMyModule", "returnTuple"));
     
 

@@ -7,14 +7,14 @@ class A:
         if Arg[-1]!= "A":
             raise ValueError("A constructor called with wrong Arg")
         self.m_int=Arg[0] # first element of the incoming tuple is a single integer
-        self.m_arr=tuplifier(Arg[1]) # the second element contains the tuple in vec
+        self.m_arr=ArrayToNumpy(Arg[1]) # the second element contains the tuple in vec
     def __str__(self):
         string = "Class A \n"
         string+= "m_int = " + str(self.m_int) + "\n"
         string+= "m_arr = " + str(self.m_arr) + "\n"
         return string
     def toCPP(self):
-        out=(self.m_int,)+self.m_arr
+        out=(self.m_int,)+tuple(_x for _x in self.m_arr)
         return out
 
 
@@ -51,7 +51,10 @@ def ArrayToNumpy(v):
     size=v[0]
     TypeOfObject=v[1]
     view=v[2]
-    arr=make_from_memView(view,[size],order='F', dtype=ArrayTypes[TypeOfObject])
+    try:
+        arr=make_from_memView(view,[size],order='F', dtype=ArrayTypes[TypeOfObject])
+    except:
+        arr=make_from_memView(view,[size,3], dtype=np.int32 )
     return arr
 
 def tuplifier(arg):
