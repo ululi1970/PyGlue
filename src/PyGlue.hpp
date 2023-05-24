@@ -99,7 +99,7 @@ PyObject *Py::makeView(T &a_v)
 
   unsigned long long size = a_v.size() * sizeof(type);
   
-  char *p = reinterpret_cast<char *>(&a_v[0]);
+  char *p = reinterpret_cast<char *>(&a_v.at(0));
   return PyMemoryView_FromMemory(p, size, PyBUF_WRITE);
 }
 //
@@ -112,7 +112,7 @@ PyObject *Py::makeView(const T &a_v)
   unsigned long long size = a_v.size() * sizeof(type);
   auto it(a_v.begin());
 
-  char *p = reinterpret_cast<char *>(const_cast<type *>(&a_v[0]));
+  char *p = reinterpret_cast<char *>(const_cast<type *>(&a_v.at(0)));
 
   return PyMemoryView_FromMemory(p, size, PyBUF_READ);
 }
