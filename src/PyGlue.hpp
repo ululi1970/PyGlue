@@ -1,3 +1,6 @@
+
+//do not include this file. Include PyGlue.H instead
+
 template <class T>
  inline PyObject* Py::pack(T &&t)
   {
@@ -119,18 +122,12 @@ PyObject *Py::makeView(const T &a_v)
 
 // 
 
-// bottom of recursion
-template <class T>
-void Py::BuildArgsVector(std::vector<PyObject *> &args, T &&t)
-{
-  args.push_back(pack(std::forward<T>(t)));
-}
+
 // recursion definition
 template <class T, class... Args>
 void Py::BuildArgsVector(std::vector<PyObject *> &args, T &&t, Args &&...ts)
 {
-
-  BuildArgsVector(args, std::forward<T>(t));
+  args.push_back(pack(std::forward<T>(t)));
   if constexpr (sizeof...(ts) != 0)
     BuildArgsVector(args, std::forward<Args>(ts)...);
 }
