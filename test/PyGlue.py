@@ -51,6 +51,7 @@ def ArrayToNumpy(v):
     size=v[0]
     TypeOfObject=v[1]
     view=v[2]
+    print(v)
     try:
         arr=make_from_memView(view,[size],order='F', dtype=ArrayTypes[TypeOfObject])
     except:

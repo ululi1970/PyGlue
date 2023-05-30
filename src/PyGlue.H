@@ -168,7 +168,7 @@ public:
 
   // used to set a str of the correspoding type, to be used to specify what type
   // of numpy should be attached to the memView
-template <class T, typename Q=void>
+template <class T, typename = void>
 struct TypeOf
 { 
   TypeOf() = delete;
@@ -207,9 +207,7 @@ struct TypeOf<T,typename std::enable_if<T::isConvertibleToNumpy>::type>
   
 
 private:
-  // bottom of recursion
-  template <class T>
-  static void BuildArgsVector(std::vector<PyObject *> &args, T &&t);
+ 
   // recursion definition
   template <class T, class... Args>
   static void BuildArgsVector(std::vector<PyObject *> &args, T &&t, Args &&...ts);

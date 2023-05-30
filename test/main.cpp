@@ -108,10 +108,11 @@ struct C {
 };
 
 struct D{
+    static const int m_d = 3;
     int m_vect[3];
     D(): m_vect{7,8,9}{};
     static constexpr bool isConvertibleToNumpy = true;
-    static std::string numpyName() {return "DStruc";}
+    static std::string numpyName() {return std::to_string(m_d)+"DStruc";}
 };
 
 int main()

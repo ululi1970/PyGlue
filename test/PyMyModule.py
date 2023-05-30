@@ -3,6 +3,7 @@ import numpy as np
 import sys
 @pg.PYGLUE
 def noArgs():
+    print("No args")
     pass
 
 @pg.PYGLUE
