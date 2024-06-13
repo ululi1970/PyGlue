@@ -3,6 +3,7 @@
 #include "Python.h"
 #include <map>
 #include <vector>
+#include <string>
 class PyBase
 {
   // data members
