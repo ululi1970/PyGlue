@@ -180,7 +180,7 @@ struct TypeOf
 
   private:
   static std::string typeToStr(){
-  using size_t = std::size_t;
+  using std::size_t;
   const bool check_type_is_defined = SAME(int) || SAME(float) || SAME(double) || SAME(size_t);
   static_assert(check_type_is_defined,
                 "Numeric arrays are only supported for int, float, double and size_t. "
